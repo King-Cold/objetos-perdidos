@@ -13,6 +13,11 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * Definición de roles institucionales
+     */
+    public const ROLE_USUARIO_GENERAL = 'Usuario general';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -20,7 +25,9 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
+        'role',
     ];
 
     /**
@@ -44,5 +51,13 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Comprueba si el usuario tiene el rol de «Usuario general».
+     */
+    public function isUsuarioGeneral(): bool
+    {
+        return $this->role === self::ROLE_USUARIO_GENERAL;
     }
 }
