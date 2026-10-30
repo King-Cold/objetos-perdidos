@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Auth;
 
 use Illuminate\Auth\Events\Lockout;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -22,19 +21,47 @@ class LoginRequest extends FormRequest
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * CA-01 y CA-02: Campos obligatorios y validación de campos vacíos o sólo espacios.
      */
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'email' => [
+                'required',
+                'string',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (trim((string) $value) === '') {
+                        $fail('El correo electrónico es obligatorio.');
+                    }
+                },
+            ],
+            'password' => [
+                'required',
+                'string',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (trim((string) $value) === '') {
+                        $fail('La contraseña es obligatoria.');
+                    }
+                },
+            ],
+        ];
+    }
+
+    /**
+     * Mensajes específicos para validación de campos.
+     */
+    public function messages(): array
+    {
+        return [
+            'email.required' => 'El correo electrónico es obligatorio.',
+            'password.required' => 'La contraseña es obligatoria.',
         ];
     }
 
     /**
      * Attempt to authenticate the request's credentials.
+     * CA-03: Normalización de correo (trim + case-insensitive) y contraseña exacta sin recorte.
+     * CA-05: Mensaje unificado idéntico ante fallo de credenciales.
      *
      * @throws ValidationException
      */
@@ -42,11 +69,15 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $rawEmail = (string) $this->input('email');
+        $normalizedEmail = Str::lower(trim($rawEmail));
+        $rawPassword = (string) $this->input('password');
+
+        if (! Auth::attempt(['email' => $normalizedEmail, 'password' => $rawPassword], $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'email' => 'Correo electrónico o contraseña incorrectos.',
             ]);
         }
 
@@ -81,6 +112,7 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        $rawEmail = (string) $this->input('email');
+        return Str::transliterate(Str::lower(trim($rawEmail)).'|'.$this->ip());
     }
 }

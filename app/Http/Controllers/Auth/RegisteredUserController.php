@@ -80,8 +80,8 @@ class RegisteredUserController extends Controller
             );
         }
 
-        // 3. Redirección al muro principal de la plataforma con la notificación institucional
-        $redirectRoute = Route::has('muro') ? route('muro', absolute: false) : route('dashboard', absolute: false);
+        // 3. Redirección al panel/muro principal de la plataforma con la notificación institucional
+        $redirectRoute = route('dashboard', absolute: false);
 
         return redirect()->intended($redirectRoute)->with('status', 'Registro exitoso');
     }

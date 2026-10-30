@@ -16,6 +16,7 @@ class User extends Authenticatable
      * Definición de roles institucionales
      */
     public const ROLE_USUARIO_GENERAL = 'Usuario general';
+    public const ROLE_ADMIN = 'Administrador/bibliotecario';
 
     /**
      * The attributes that are mass assignable.
@@ -59,5 +60,14 @@ class User extends Authenticatable
     public function isUsuarioGeneral(): bool
     {
         return $this->role === self::ROLE_USUARIO_GENERAL;
+    }
+
+    /**
+     * Comprueba si el usuario tiene el rol de «Administrador/bibliotecario».
+     * Administrador y bibliotecario corresponden al mismo rol y conjunto de permisos (CA-09).
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN || $this->role === 'Administrador' || $this->role === 'Bibliotecario';
     }
 }
