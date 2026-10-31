@@ -26,7 +26,7 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
+            'email' => fake()->unique()->lexify('user_??????') . '@merida.tecnm.mx',
             'phone' => '9991234567',
             'role' => User::ROLE_USUARIO_GENERAL,
             'email_verified_at' => now(),
