@@ -119,7 +119,7 @@ class ProfilePhoneSubtaskTest extends TestCase
         $response
             ->assertSessionHasNoErrors()
             ->assertRedirect('/profile')
-            ->assertSessionHas('status', 'Teléfono de contacto actualizado correctamente.');
+            ->assertSessionHas('status', 'Teléfono de contacto actualizado correctamente');
 
         $user->refresh();
         $this->assertSame('9994445566', $user->phone);
@@ -169,7 +169,9 @@ class ProfilePhoneSubtaskTest extends TestCase
                     'phone' => $invalidPhone,
                 ]);
 
-            $response->assertSessionHasErrors('phone');
+            $response->assertSessionHasErrors([
+                'phone' => 'El teléfono debe contener exactamente 10 dígitos, sin espacios ni otros caracteres',
+            ]);
             $this->assertSame('9991112233', $user->fresh()->phone);
         }
     }
@@ -228,11 +230,53 @@ class ProfilePhoneSubtaskTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->withSession(['status' => 'Teléfono de contacto actualizado correctamente.'])
+            ->withSession(['status' => 'Teléfono de contacto actualizado correctamente'])
             ->get('/profile');
 
         $response->assertOk();
-        $response->assertSee('Teléfono de contacto actualizado correctamente.');
+        $response->assertSee('Teléfono de contacto actualizado correctamente');
+        $response->assertSee('Swal.fire', false);
+    }
+
+    public function test_saving_identical_phone_does_not_modify_data_and_notifies_no_changes(): void
+    {
+        $phone = '9991112233';
+        $user = User::factory()->create([
+            'name' => 'Usuario Mismo Teléfono',
+            'phone' => $phone,
+        ]);
+
+        $initialUserCount = User::count();
+
+        $response = $this
+            ->actingAs($user)
+            ->patch('/profile', [
+                'phone' => $phone,
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile')
+            ->assertSessionHas('status', 'No hay cambios en el teléfono de contacto');
+
+        $this->assertSame($initialUserCount, User::count());
+        $user->refresh();
+        $this->assertSame($phone, $user->phone);
+        $this->assertSame('Usuario Mismo Teléfono', $user->name);
+    }
+
+    public function test_no_changes_status_alert_popup_is_rendered(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->withSession(['status' => 'No hay cambios en el teléfono de contacto'])
+            ->get('/profile');
+
+        $response->assertOk();
+        $response->assertSee('No hay cambios en el teléfono de contacto');
+        $response->assertSee('El número ingresado es idéntico');
         $response->assertSee('Swal.fire', false);
     }
 
@@ -262,6 +306,7 @@ class ProfilePhoneSubtaskTest extends TestCase
             ->get('/profile');
 
         $viewResponse->assertOk();
+        $viewResponse->assertSee('El teléfono debe contener exactamente 10 dígitos, sin espacios ni otros caracteres');
         $viewResponse->assertSee('showPhoneErrorNotification', false);
         $viewResponse->assertSee('No se pudo actualizar el teléfono');
     }

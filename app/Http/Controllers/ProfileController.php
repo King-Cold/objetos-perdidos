@@ -26,17 +26,25 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
+        $newPhone = (string) $request->validated('phone');
+        $user = $request->user();
+
+        // Si se guarda el mismo número que ya tiene la cuenta, no genera modificaciones adicionales ni altera datos
+        if ((string) $user->phone === $newPhone) {
+            return Redirect::route('profile.edit')->with('status', 'No hay cambios en el teléfono de contacto');
+        }
+
         try {
             // Actualizar únicamente el teléfono de la cuenta autenticada (sin historial)
-            $request->user()->update([
-                'phone' => (string) $request->validated('phone'),
+            $user->update([
+                'phone' => $newPhone,
             ]);
 
-            return Redirect::route('profile.edit')->with('status', 'Teléfono de contacto actualizado correctamente.');
+            return Redirect::route('profile.edit')->with('status', 'Teléfono de contacto actualizado correctamente');
         } catch (\Throwable $e) {
             // Conservar el teléfono anterior cuando la actualización no pueda completarse
             return Redirect::route('profile.edit')
-                ->withErrors(['phone' => 'No se pudo completar la actualización. El teléfono anterior se conserva sin cambios.'])
+                ->withErrors(['phone' => 'El teléfono debe contener exactamente 10 dígitos, sin espacios ni otros caracteres'])
                 ->withInput();
         }
     }

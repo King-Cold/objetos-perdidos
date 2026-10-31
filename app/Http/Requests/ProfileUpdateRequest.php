@@ -50,9 +50,9 @@ class ProfileUpdateRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'phone.required' => 'El teléfono debe contener exactamente 10 dígitos, sin espacios ni otros caracteres.',
-            'phone.string' => 'El teléfono debe contener exactamente 10 dígitos, sin espacios ni otros caracteres.',
-            'phone.regex' => 'El teléfono debe contener exactamente 10 dígitos, sin espacios ni otros caracteres.',
+            'phone.required' => 'El teléfono debe contener exactamente 10 dígitos, sin espacios ni otros caracteres',
+            'phone.string' => 'El teléfono debe contener exactamente 10 dígitos, sin espacios ni otros caracteres',
+            'phone.regex' => 'El teléfono debe contener exactamente 10 dígitos, sin espacios ni otros caracteres',
         ];
     }
 }
