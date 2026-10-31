@@ -124,4 +124,15 @@ class Publicacion extends Model
     {
         return (bool) $this->disponible && $this->estado === 'Aprobada';
     }
+
+    /**
+     * Comprueba si el objeto está bajo resguardo confirmado de biblioteca (CA-20).
+     */
+    public function isBajoResguardoBiblioteca(): bool
+    {
+        $lugar = mb_strtolower((string) ($this->lugar_hallazgo ?? ''));
+        $area = mb_strtolower((string) ($this->area_zona ?? ''));
+
+        return str_contains($lugar, 'biblioteca') || str_contains($area, 'biblioteca');
+    }
 }

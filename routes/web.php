@@ -27,7 +27,7 @@ Route::get('/muro', function () {
 
 // Detalle de publicación y destino previo (CA-08, CA-28, CA-29)
 Route::get('/publicaciones/{id}', function ($id) {
-    $publicacion = Publicacion::find($id);
+    $publicacion = Publicacion::with(['user', 'fotografias'])->find($id);
 
     if (! $publicacion || ! $publicacion->isDisponible()) {
         return redirect()->route('muro')->with('warning', 'Esta publicación no está disponible para consulta');
@@ -80,7 +80,7 @@ Route::middleware('auth')->group(function () {
 
     // Mis Reportes de Usuario General (CA-13, CA-16, Tarea 05.5)
     Route::get('/reportes/mis-reportes', function () {
-        $reportes = Publicacion::with('fotografias')->where('user_id', Auth::id())->latest()->get();
+        $reportes = Publicacion::with(['fotografias', 'user'])->where('user_id', Auth::id())->latest()->get();
         return view('reportes.mis-reportes', compact('reportes'));
     })->name('reportes.mis-reportes');
 
