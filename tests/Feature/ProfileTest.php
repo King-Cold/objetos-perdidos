@@ -26,11 +26,13 @@ class ProfileTest extends TestCase
         $user = User::factory()->create([
             'name' => 'Original Name',
             'email' => 'original@merida.tecnm.mx',
+            'phone' => '9991112233',
         ]);
 
         $response = $this
             ->actingAs($user)
             ->patch('/profile', [
+                'phone' => '9991112233',
                 'name' => 'Test User Modificado',
                 'email' => 'modificado@merida.tecnm.mx',
             ]);
@@ -60,8 +62,8 @@ class ProfileTest extends TestCase
         $response->assertSee('readonly', false);
         $response->assertSee('disabled', false);
 
-        // No debe existir formulario PATCH para actualización de perfil
-        $response->assertDontSee('value="patch"', false);
+        // No debe existir botón Save para actualizar nombre o correo
+        $response->assertDontSee('Save');
     }
 
     public function test_password_update_section_is_not_present_in_profile_view(): void

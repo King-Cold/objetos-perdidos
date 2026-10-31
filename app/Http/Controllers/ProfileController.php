@@ -26,19 +26,19 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        // Regla funcional: Los usuarios únicamente podrán editar su número telefónico desde «Mi perfil».
-        // No se permite modificar nombre, correo electrónico, rol ni contraseña mediante esta ruta,
-        // incluso ante solicitudes HTTP directas.
-        $safeData = collect($request->validated())
-            ->except(['name', 'email', 'role', 'password'])
-            ->toArray();
+        try {
+            // Actualizar únicamente el teléfono de la cuenta autenticada (sin historial)
+            $request->user()->update([
+                'phone' => (string) $request->validated('phone'),
+            ]);
 
-        if (! empty($safeData)) {
-            $request->user()->fill($safeData);
-            $request->user()->save();
+            return Redirect::route('profile.edit')->with('status', 'Teléfono de contacto actualizado correctamente.');
+        } catch (\Throwable $e) {
+            // Conservar el teléfono anterior cuando la actualización no pueda completarse
+            return Redirect::route('profile.edit')
+                ->withErrors(['phone' => 'No se pudo completar la actualización. El teléfono anterior se conserva sin cambios.'])
+                ->withInput();
         }
-
-        return Redirect::route('profile.edit');
     }
 
     /**

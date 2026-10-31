@@ -5,9 +5,11 @@
 <section
     x-data="{
         originalPhone: @js($currentPhone),
-        phone: @js($currentPhone),
+        phone: @js(old('phone', $currentPhone)),
+        hasError: @js($errors->has('phone')),
         cancel() {
             this.phone = this.originalPhone;
+            this.hasError = false;
             if (this.$refs.phoneInput) {
                 this.$refs.phoneInput.value = this.originalPhone;
             }
@@ -24,7 +26,129 @@
         </p>
     </header>
 
-    <form class="mt-6 space-y-6" onsubmit="event.preventDefault(); return false;">
+    <!-- Ventana emergente SweetAlert2 institucional para notificar actualización exitosa -->
+    @if (session('status'))
+        <div class="sr-only" aria-live="polite">
+            {{ session('status') === 'phone-updated' ? 'Teléfono de contacto actualizado correctamente.' : session('status') }}
+        </div>
+        <script>
+            (function() {
+                function showPhoneNotification() {
+                    var statusText = @js(session('status') === 'phone-updated' ? 'Teléfono de contacto actualizado correctamente.' : session('status'));
+                    if (typeof window.Swal !== 'undefined') {
+                        window.Swal.fire({
+                            html: `
+                                <div class="relative pt-1 pb-1 px-1 text-center">
+                                    <!-- Franja decorativa superior degradada vino a dorado -->
+                                    <div class="absolute -top-6 -inset-x-6 h-1.5 bg-gradient-to-r from-[#691C32] via-[#941A3E] to-[#C59B3F]"></div>
+
+                                    <!-- Icono circular con aro dorado, brillo suave y palomita en rojo vino -->
+                                    <div class="mx-auto w-16 h-16 rounded-full border-[2.5px] border-[#C59B3F] bg-gradient-to-b from-amber-50 to-orange-50/40 flex items-center justify-center mb-3.5 shadow-md ring-4 ring-amber-100/70">
+                                        <svg class="w-8 h-8 text-[#691C32]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                        </svg>
+                                    </div>
+
+                                    <!-- Título institucional -->
+                                    <h3 class="text-xl font-black text-slate-800 tracking-tight">
+                                        ${statusText}
+                                    </h3>
+
+                                    <!-- Mensaje informativo -->
+                                    <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed max-w-[270px] mx-auto">
+                                        Tu número de contacto ha sido actualizado con éxito en tu cuenta.
+                                    </p>
+                                </div>
+                            `,
+                            showConfirmButton: true,
+                            confirmButtonText: 'Aceptar',
+                            buttonsStyling: false,
+                            background: '#FCFBF9',
+                            backdrop: 'rgba(26, 4, 10, 0.5)',
+                            showCloseButton: false,
+                            customClass: {
+                                popup: 'rounded-3xl shadow-2xl border-2 border-amber-400/60 ring-1 ring-black/5 p-6 max-w-sm mx-auto overflow-hidden',
+                                confirmButton: 'inline-flex items-center justify-center px-8 py-2.5 rounded-full font-bold text-xs tracking-wide text-white bg-gradient-to-r from-[#691C32] via-[#7D1636] to-[#691C32] hover:from-[#520B1D] hover:to-[#520B1D] active:bg-[#3B0715] border border-amber-300/40 shadow-md hover:shadow-lg transition-all duration-150 cursor-pointer mt-3.5 focus:outline-none focus:ring-2 focus:ring-[#691C32] focus:ring-offset-2'
+                            }
+                        });
+                    } else {
+                        setTimeout(showPhoneNotification, 50);
+                    }
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', showPhoneNotification);
+                } else {
+                    showPhoneNotification();
+                }
+            })();
+        </script>
+    @endif
+
+    <!-- Ventana emergente SweetAlert2 institucional para notificar errores en la actualización -->
+    @if ($errors->has('phone'))
+        <script>
+            (function() {
+                function showPhoneErrorNotification() {
+                    var errorMessage = @js($errors->first('phone'));
+                    if (typeof window.Swal !== 'undefined') {
+                        window.Swal.fire({
+                            html: `
+                                <div class="relative pt-1 pb-1 px-1 text-center">
+                                    <!-- Franja decorativa superior degradada vino a rojo -->
+                                    <div class="absolute -top-6 -inset-x-6 h-1.5 bg-gradient-to-r from-[#691C32] via-red-600 to-[#691C32]"></div>
+
+                                    <!-- Icono circular de advertencia/error -->
+                                    <div class="mx-auto w-16 h-16 rounded-full border-[2.5px] border-red-300 bg-red-50 flex items-center justify-center mb-3.5 shadow-md ring-4 ring-red-100">
+                                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                                        </svg>
+                                    </div>
+
+                                    <!-- Título institucional -->
+                                    <h3 class="text-xl font-black text-slate-800 tracking-tight">
+                                        No se pudo actualizar el teléfono
+                                    </h3>
+
+                                    <!-- Mensaje informativo de error -->
+                                    <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed max-w-[280px] mx-auto">
+                                        ${errorMessage}
+                                    </p>
+
+                                    <p class="text-[11px] text-slate-500 mt-2">
+                                        El número anterior se conserva intacto en tu cuenta.
+                                    </p>
+                                </div>
+                            `,
+                            showConfirmButton: true,
+                            confirmButtonText: 'Reintentar',
+                            buttonsStyling: false,
+                            background: '#FCFBF9',
+                            backdrop: 'rgba(26, 4, 10, 0.5)',
+                            showCloseButton: false,
+                            customClass: {
+                                popup: 'rounded-3xl shadow-2xl border-2 border-red-300/80 ring-1 ring-black/5 p-6 max-w-sm mx-auto overflow-hidden',
+                                confirmButton: 'inline-flex items-center justify-center px-8 py-2.5 rounded-full font-bold text-xs tracking-wide text-white bg-gradient-to-r from-[#691C32] via-red-700 to-[#691C32] hover:from-[#520B1D] hover:to-[#520B1D] active:bg-[#3B0715] border border-red-300 shadow-md hover:shadow-lg transition-all duration-150 cursor-pointer mt-3.5 focus:outline-none focus:ring-2 focus:ring-[#691C32] focus:ring-offset-2'
+                            }
+                        });
+                    } else {
+                        setTimeout(showPhoneErrorNotification, 50);
+                    }
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', showPhoneErrorNotification);
+                } else {
+                    showPhoneErrorNotification();
+                }
+            })();
+        </script>
+    @endif
+
+    <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
+        @csrf
+        @method('patch')
+
         <div>
             <x-input-label for="phone">
                 {{ __('Teléfono de contacto') }} <span class="text-red-600 font-bold" aria-hidden="true">*</span> <span class="text-xs text-red-600 font-medium">({{ __('Obligatorio') }})</span>
@@ -40,13 +164,17 @@
                 maxlength="10"
                 pattern="[0-9]{10}"
                 class="mt-1 block w-full focus:border-tecnm-wine focus:ring-tecnm-wine"
-                :value="$currentPhone"
+                :value="old('phone', $currentPhone)"
                 x-model="phone"
-                x-on:input="phone = $event.target.value = $event.target.value.replace(/[^0-9]/g, '').slice(0, 10)"
+                x-on:input="hasError = false; phone = $event.target.value = $event.target.value.replace(/[^0-9]/g, '').slice(0, 10)"
                 required
                 aria-required="true"
                 aria-describedby="phone-instructions"
             />
+
+            <div x-show="hasError">
+                <x-input-error class="mt-2" :messages="$errors->get('phone')" />
+            </div>
 
             <p id="phone-instructions" class="mt-2 text-sm text-gray-500">
                 Ingresa 10 dígitos, sin espacios ni otros caracteres
@@ -54,7 +182,7 @@
         </div>
 
         <div class="flex items-center gap-4">
-            <x-primary-button type="button" id="btn-save-phone">
+            <x-primary-button id="btn-save-phone">
                 {{ __('Guardar cambios') }}
             </x-primary-button>
 
