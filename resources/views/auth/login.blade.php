@@ -123,9 +123,10 @@
                         @if (Route::has('password.request'))
                             <a
                                 href="{{ route('password.request') }}"
+                                title="¿Olvidaste tu contraseña?"
                                 class="text-xs font-medium text-tecnm-wine hover:text-tecnm-wine-hover hover:underline transition-colors focus:outline-none focus:ring-2 focus:ring-tecnm-gold rounded"
                             >
-                                ¿Olvidaste tu contraseña?
+                                Olvidé mi contraseña
                             </a>
                         @endif
                     </div>
