@@ -281,6 +281,7 @@
                             }
                             this.images.splice(index, 1);
                             this.syncFiles();
+
                             if (this.images.length === 0) {
                                 this.clientErrors.fotografias = 'Debes adjuntar al menos una fotografía del objeto.';
                             }
@@ -802,40 +803,43 @@
 
                                     <!-- Galería cuando hay al menos 1 fotografía -->
                                     <template x-if="images.length > 0">
-                                        <div class="space-y-2.5">
-                                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                                <template x-for="(img, idx) in images" :key="idx">
-                                                    <div class="relative group rounded-xl overflow-hidden border border-slate-200 bg-white shadow-2xs">
-                                                        <img :src="img.url" :alt="img.name" class="w-full h-20 object-cover" />
-                                                        <div class="p-1 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[9px]">
-                                                            <span class="truncate max-w-[65px] text-slate-600 font-medium" x-text="img.name"></span>
-                                                            <button
-                                                                type="button"
-                                                                @click="removeImage(idx)"
-                                                                class="text-red-600 hover:text-red-800 font-bold ml-1"
-                                                                title="Quitar foto"
-                                                            >
-                                                                ✕
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </template>
+                                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                            <template x-for="(img, idx) in images" :key="idx">
+                                                <div class="relative group rounded-xl overflow-hidden border border-slate-200 bg-white shadow-2xs">
+                                                    <img
+                                                        :src="img.url"
+                                                        :alt="img.name"
+                                                        class="w-full h-20 object-cover"
+                                                    />
 
-                                                <!-- Botón para agregar más fotos hasta el límite de 5 -->
-                                                <template x-if="images.length < maxImages">
-                                                    <button
-                                                        type="button"
-                                                        @click="$refs.pickerInput.click()"
-                                                        class="h-20 border-2 border-dashed border-slate-300 hover:border-tecnm-wine rounded-xl flex flex-col items-center justify-center p-1 text-slate-500 hover:text-tecnm-wine bg-white hover:bg-amber-50/20 transition-colors"
-                                                    >
-                                                        <svg class="w-4 h-4 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                                        </svg>
-                                                        <span class="text-[10px] font-bold">Añadir más</span>
-                                                        <span class="text-[8px] text-slate-400" x-text="(maxImages - images.length) + ' disponibles'"></span>
-                                                    </button>
-                                                </template>
-                                            </div>
+                                                    <div class="p-1 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[9px]">
+                                                        <span class="truncate max-w-[65px] text-slate-600 font-medium" x-text="img.name"></span>
+                                                        <button
+                                                            type="button"
+                                                            @click.stop="removeImage(idx)"
+                                                            class="text-red-600 hover:text-red-800 font-bold ml-1 p-0.5 rounded hover:bg-red-50"
+                                                            title="Quitar foto"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </template>
+
+                                            <!-- Botón para agregar más fotos hasta el límite de 5 -->
+                                            <template x-if="images.length < maxImages">
+                                                <button
+                                                    type="button"
+                                                    @click="$refs.pickerInput.click()"
+                                                    class="h-20 border-2 border-dashed border-slate-300 hover:border-tecnm-wine rounded-xl flex flex-col items-center justify-center p-1 text-slate-500 hover:text-tecnm-wine bg-white hover:bg-amber-50/20 transition-colors cursor-pointer"
+                                                >
+                                                    <svg class="w-4 h-4 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                                    </svg>
+                                                    <span class="text-[10px] font-bold">Añadir más</span>
+                                                    <span class="text-[8px] text-slate-400" x-text="(maxImages - images.length) + ' disponibles'"></span>
+                                                </button>
+                                            </template>
                                         </div>
                                     </template>
 
@@ -860,6 +864,17 @@
                                             <span>{{ $message }}</span>
                                         </p>
                                     @enderror
+
+                                    <!-- Advertencia sobre Fotografías (Requisito 1) -->
+                                    <div class="mt-2 p-2.5 rounded-xl bg-amber-50/50 border border-amber-200/60 text-[11px] text-slate-600 leading-relaxed flex items-start gap-2">
+                                        <svg class="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                        <p>
+                                            <strong class="font-bold text-slate-800">Aviso sobre fotografías:</strong>
+                                            Evita subir fotografías que contengan datos personales legibles. Reserva algunas características del objeto que puedan servir para comprobar que te pertenece.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -940,43 +955,51 @@
                 </div>
 
                 <!-- Barra Inferior de Acciones Unificada (Footer del Formulario) -->
-                <div class="bg-slate-50 border-t border-slate-200/90 px-6 sm:px-8 py-4 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div class="flex items-center gap-2 text-xs text-slate-500">
+                <div class="bg-slate-50 border-t border-slate-200/90 px-6 sm:px-8 py-4 flex flex-col-reverse sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <div class="flex items-center gap-2 text-xs text-slate-500 pt-1">
                         <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span>Verifica que los datos del hallazgo y la ubicación sean lo más claros posible.</span>
                     </div>
 
-                    <div class="flex items-center justify-end gap-3 w-full sm:w-auto">
-                        <a
-                            href="{{ route('reportes.mis-reportes') }}"
-                            class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors shadow-xs"
-                        >
-                            Cancelar
-                        </a>
+                    <div class="flex flex-col items-stretch sm:items-end gap-2 w-full sm:w-auto">
+                        <div class="flex items-center justify-end gap-3 w-full sm:w-auto">
+                            <a
+                                href="{{ route('reportes.mis-reportes') }}"
+                                class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors shadow-xs"
+                            >
+                                Cancelar
+                            </a>
 
-                        <button
-                            type="submit"
-                            id="btn-enviar-revision"
-                            :disabled="submitting"
-                            :class="submitting ? 'opacity-70 cursor-not-allowed' : ''"
-                            class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-tecnm-wine focus:ring-offset-2"
-                        >
-                            <span x-show="!submitting" class="inline-flex items-center gap-2">
-                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span>Encontré un objeto</span>
-                            </span>
-                            <span x-show="submitting" class="inline-flex items-center gap-2" style="display: none;">
-                                <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span>Enviando reporte...</span>
-                            </span>
-                        </button>
+                            <button
+                                type="submit"
+                                id="btn-enviar-revision"
+                                :disabled="submitting"
+                                :class="submitting ? 'opacity-70 cursor-not-allowed' : ''"
+                                class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-tecnm-wine focus:ring-offset-2"
+                            >
+                                <span x-show="!submitting" class="inline-flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>Encontré un objeto</span>
+                                </span>
+                                <span x-show="submitting" class="inline-flex items-center gap-2" style="display: none;">
+                                    <svg class="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Enviando reporte...</span>
+                                </span>
+                            </button>
+                        </div>
+
+                        <!-- Aviso sobre publicación (debajo de los botones) -->
+                        <p class="text-[11px] text-slate-500 sm:text-right max-w-md leading-snug">
+                            <strong class="font-bold text-slate-700">Aviso sobre publicación:</strong>
+                            Antes de enviar tu reporte, considera que el nombre del objeto, la fotografía principal y la descripción completa podrán ser visibles públicamente cuando la publicación sea aprobada.
+                        </p>
                     </div>
                 </div>
             </form>
