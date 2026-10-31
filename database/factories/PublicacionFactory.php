@@ -30,6 +30,7 @@ class PublicacionFactory extends Factory
             'area_zona' => 'Biblioteca Campus Poniente',
             'ubicacion_especifica' => 'Mesa de estudio central',
             'fecha_captura' => $now,
+            'fecha_envio_revision' => $now,
             'categoria' => 'Electrónicos',
             'lugar_hallazgo' => 'Biblioteca Campus Poniente - Mesa de estudio central',
             'estado' => 'Aprobada',

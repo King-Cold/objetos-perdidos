@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ModeracionReporteController;
 use App\Http\Controllers\FotografiaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReporteController;
@@ -9,18 +10,46 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 // Muro público institucional (CA-08, CA-19, CA-26)
-Route::get('/', function () {
-    $publicaciones = \Illuminate\Support\Facades\Schema::hasTable('publicaciones')
-        ? Publicacion::where('disponible', true)->where('estado', 'Aprobada')->latest()->get()
-        : collect();
+Route::get('/', function (Request $request) {
+    if (! \Illuminate\Support\Facades\Schema::hasTable('publicaciones')) {
+        return view('muro', ['publicaciones' => collect()]);
+    }
+
+    $query = Publicacion::disponiblesMuro();
+
+    if ($request->filled('buscar')) {
+        $buscar = trim((string) $request->input('buscar'));
+        $query->where(function ($q) use ($buscar) {
+            $q->where('nombre', 'like', "%{$buscar}%")
+              ->orWhere('titulo', 'like', "%{$buscar}%")
+              ->orWhere('descripcion', 'like', "%{$buscar}%")
+              ->orWhere('folio', 'like', "%{$buscar}%");
+        });
+    }
+
+    $publicaciones = $query->latest()->get();
 
     return view('muro', compact('publicaciones'));
 });
 
-Route::get('/muro', function () {
-    $publicaciones = \Illuminate\Support\Facades\Schema::hasTable('publicaciones')
-        ? Publicacion::where('disponible', true)->where('estado', 'Aprobada')->latest()->get()
-        : collect();
+Route::get('/muro', function (Request $request) {
+    if (! \Illuminate\Support\Facades\Schema::hasTable('publicaciones')) {
+        return view('muro', ['publicaciones' => collect()]);
+    }
+
+    $query = Publicacion::disponiblesMuro();
+
+    if ($request->filled('buscar')) {
+        $buscar = trim((string) $request->input('buscar'));
+        $query->where(function ($q) use ($buscar) {
+            $q->where('nombre', 'like', "%{$buscar}%")
+              ->orWhere('titulo', 'like', "%{$buscar}%")
+              ->orWhere('descripcion', 'like', "%{$buscar}%")
+              ->orWhere('folio', 'like', "%{$buscar}%");
+        });
+    }
+
+    $publicaciones = $query->latest()->get();
 
     return view('muro', compact('publicaciones'));
 })->name('muro');
@@ -47,17 +76,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
         return view('admin.dashboard');
     })->name('admin.dashboard');
 
-    Route::get('/publicaciones', function () {
-        $publicaciones = Publicacion::latest()->get();
-        return view('admin.dashboard', compact('publicaciones'));
-    })->name('admin.publicaciones');
+    // Moderación y Gestión de reportes de objetos (HU-07, Tarea 07.1, 07.2, 07.3, 07.4 y 07.5)
+    Route::get('/moderacion', [ModeracionReporteController::class, 'index'])->name('admin.moderacion.index');
+    Route::get('/moderacion/{id}', [ModeracionReporteController::class, 'show'])->name('admin.moderacion.show');
+    Route::post('/moderacion/{id}/solicitar-correccion', [ModeracionReporteController::class, 'solicitarCorreccion'])->name('admin.moderacion.solicitar-correccion');
+    Route::post('/moderacion/{id}/aprobar', [ModeracionReporteController::class, 'aprobar'])->name('admin.moderacion.aprobar');
+    Route::post('/moderacion/{id}/cancelar', [ModeracionReporteController::class, 'cancelar'])->name('admin.moderacion.cancelar');
+    Route::get('/publicaciones', [ModeracionReporteController::class, 'index'])->name('admin.publicaciones');
 
-    // Aprobación de publicaciones (CA-13)
-    Route::post('/publicaciones/{id}/aprobar', function ($id) {
-        $publicacion = Publicacion::findOrFail($id);
-        $publicacion->update(['estado' => 'Aprobada', 'disponible' => true]);
-        return redirect()->back()->with('status', 'Publicación aprobada correctamente');
-    })->name('publicaciones.aprobar');
+    // Aprobación de publicaciones (CA-13 / compatibilidad)
+    Route::post('/publicaciones/{id}/aprobar', [ModeracionReporteController::class, 'aprobar'])->name('publicaciones.aprobar');
 
     // Validación de devoluciones (CA-13)
     Route::post('/devoluciones/{id}/validar', function ($id) {

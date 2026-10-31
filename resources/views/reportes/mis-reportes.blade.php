@@ -115,12 +115,19 @@
                                         </span>
                                         <div class="flex items-center gap-2 overflow-x-auto py-1">
                                             @foreach ($rep->fotografias as $foto)
-                                                <img
-                                                    src="{{ $foto->url }}"
-                                                    alt="{{ $foto->nombre_original ?? 'Foto del objeto' }}"
-                                                    class="w-14 h-14 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-50"
-                                                    loading="lazy"
-                                                />
+                                                <div class="relative shrink-0">
+                                                    <img
+                                                        src="{{ $foto->url }}"
+                                                        alt="{{ $foto->nombre_original ?? 'Foto del objeto' }}"
+                                                        class="w-14 h-14 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-50"
+                                                        loading="lazy"
+                                                    />
+                                                    @if ($loop->first)
+                                                        <span class="absolute bottom-0.5 left-0.5 px-1 py-0.5 rounded text-[8px] font-bold bg-[#722F37] text-white leading-none shadow-xs">
+                                                            Principal
+                                                        </span>
+                                                    @endif
+                                                </div>
                                             @endforeach
                                         </div>
                                     </div>

@@ -44,11 +44,18 @@
                             </h3>
                             <div class="flex items-center gap-3 overflow-x-auto py-2">
                                 @foreach ($publicacion->fotografias as $foto)
-                                    <img
-                                        src="{{ $foto->url }}"
-                                        alt="{{ $foto->nombre_original ?? 'Foto del objeto' }}"
-                                        class="w-24 h-24 sm:w-32 sm:h-32 rounded-xl object-cover border border-slate-200 shadow-xs shrink-0"
-                                    />
+                                    <div class="relative shrink-0">
+                                        <img
+                                            src="{{ $foto->url }}"
+                                            alt="{{ $foto->nombre_original ?? 'Foto del objeto' }}"
+                                            class="w-24 h-24 sm:w-32 sm:h-32 rounded-xl object-cover border border-slate-200 shadow-xs shrink-0"
+                                        />
+                                        @if ($loop->first)
+                                            <span class="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-[#722F37] text-white shadow-xs">
+                                                Principal
+                                            </span>
+                                        @endif
+                                    </div>
                                 @endforeach
                             </div>
                         </div>

@@ -28,12 +28,12 @@
                             {{ __('Panel Administrativo') }}
                         </x-nav-link>
 
-                        <x-nav-link :href="route('muro')" :active="request()->routeIs('muro')">
-                            {{ __('Muro Público') }}
+                        <x-nav-link :href="route('admin.moderacion.index')" :active="request()->routeIs('admin.moderacion.*') || request()->routeIs('admin.publicaciones')">
+                            {{ __('Gestión de Objetos') }}
                         </x-nav-link>
 
-                        <x-nav-link :href="route('admin.publicaciones')" :active="request()->routeIs('admin.publicaciones')">
-                            {{ __('Gestión de Objetos') }}
+                        <x-nav-link :href="route('muro')" :active="request()->routeIs('muro')">
+                            {{ __('Muro Público') }}
                         </x-nav-link>
                     @else
                         <!-- Opciones Exclusivas de Usuario General (CA-16) -->
@@ -107,12 +107,12 @@
                     {{ __('Panel Administrativo') }}
                 </x-responsive-nav-link>
 
-                <x-responsive-nav-link :href="route('muro')" :active="request()->routeIs('muro')">
-                    {{ __('Muro Público') }}
+                <x-responsive-nav-link :href="route('admin.moderacion.index')" :active="request()->routeIs('admin.moderacion.*') || request()->routeIs('admin.publicaciones')">
+                    {{ __('Gestión de Objetos') }}
                 </x-responsive-nav-link>
 
-                <x-responsive-nav-link :href="route('admin.publicaciones')" :active="request()->routeIs('admin.publicaciones')">
-                    {{ __('Gestión de Objetos') }}
+                <x-responsive-nav-link :href="route('muro')" :active="request()->routeIs('muro')">
+                    {{ __('Muro Público') }}
                 </x-responsive-nav-link>
             @else
                 <x-responsive-nav-link :href="route('muro')" :active="request()->routeIs('muro')">

@@ -70,4 +70,12 @@ class User extends Authenticatable
     {
         return $this->role === self::ROLE_ADMIN || $this->role === 'Administrador' || $this->role === 'Bibliotecario';
     }
+
+    /**
+     * Decisiones de moderación tomadas por el usuario.
+     */
+    public function decisionesModeracion(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(DecisionModeracion::class);
+    }
 }

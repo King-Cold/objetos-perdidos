@@ -126,6 +126,7 @@ class ReporteController extends Controller
                 'estado' => Publicacion::ESTADO_PENDIENTE, // 'Pendiente de aprobación'
                 'disponible' => false, // No publicado ni reclamable aún
                 'fecha_captura' => $fechaCaptura,
+                'fecha_envio_revision' => $fechaCaptura,
             ]);
 
             // Guardado privado de fotografías en storage/app/private/hallazgos (disco local)
