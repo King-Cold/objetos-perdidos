@@ -1,7 +1,7 @@
 @auth
     <x-app-layout>
         <x-slot name="header">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h2 class="font-black text-xl text-slate-800 leading-tight">
                         Muro de Objetos Perdidos y Encontrados
@@ -9,6 +9,14 @@
                     <p class="text-xs text-slate-500 mt-0.5">
                         Objetos resguardados en Biblioteca o reportados en el Campus Poniente
                     </p>
+                </div>
+                <div>
+                    <a href="{{ route('reportes.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors shadow-xs">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Encontré un objeto</span>
+                    </a>
                 </div>
             </div>
         </x-slot>

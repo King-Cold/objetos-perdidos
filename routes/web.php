@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\FotografiaController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReporteController;
 use App\Models\Publicacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -72,11 +74,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
 // Rutas protegidas para usuarios autenticados (CA-12, CA-13, CA-14, CA-15)
 Route::middleware('auth')->group(function () {
-    // Mis Reportes de Usuario General (CA-13, CA-16)
+    // Formulario de Registro de Hallazgo (Tarea 05.1 y 05.2)
+    Route::get('/reportes/crear', [ReporteController::class, 'create'])->name('reportes.create');
+    Route::post('/reportes', [ReporteController::class, 'store'])->name('reportes.store');
+
+    // Mis Reportes de Usuario General (CA-13, CA-16, Tarea 05.5)
     Route::get('/reportes/mis-reportes', function () {
-        $reportes = Publicacion::where('user_id', Auth::id())->latest()->get();
+        $reportes = Publicacion::with('fotografias')->where('user_id', Auth::id())->latest()->get();
         return view('reportes.mis-reportes', compact('reportes'));
     })->name('reportes.mis-reportes');
+
+    // Acceso privado y controlado a fotografías de reportes (Tarea 05.5)
+    Route::get('/fotografias/{fotografia}', [FotografiaController::class, 'show'])->name('fotografias.show');
 
     // Edición con comprobación estricta de autoría (CA-13)
     Route::get('/reportes/{id}/editar', function ($id) {

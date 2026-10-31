@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Publicacion;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -15,12 +16,22 @@ class PublicacionFactory extends Factory
 
     public function definition(): array
     {
+        $now = Carbon::now(Publicacion::TIMEZONE);
+        $titulo = fake()->sentence(3);
+
         return [
             'user_id' => User::factory(),
-            'titulo' => fake()->sentence(3),
+            'folio' => 'OBJ-' . $now->format('Ymd') . '-' . fake()->unique()->numerify('####'),
+            'nombre' => $titulo,
+            'titulo' => $titulo,
             'descripcion' => fake()->paragraph(),
+            'fecha_hallazgo' => $now->format('Y-m-d'),
+            'hora_hallazgo' => '10:00',
+            'area_zona' => 'Biblioteca Campus Poniente',
+            'ubicacion_especifica' => 'Mesa de estudio central',
+            'fecha_captura' => $now,
             'categoria' => 'Electrónicos',
-            'lugar_hallazgo' => 'Biblioteca Campus Poniente',
+            'lugar_hallazgo' => 'Biblioteca Campus Poniente - Mesa de estudio central',
             'estado' => 'Aprobada',
             'disponible' => true,
         ];
@@ -37,9 +48,8 @@ class PublicacionFactory extends Factory
     public function pendiente(): static
     {
         return $this->state(fn () => [
-            'disponible' => true,
+            'disponible' => false,
             'estado' => 'Pendiente de aprobación',
         ]);
     }
 }
-
