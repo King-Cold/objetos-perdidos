@@ -148,74 +148,75 @@
                 </div>
             </header>
 
-            <!-- Contenedor Principal -->
-            <main class="max-w-4xl mx-auto px-4 sm:px-6 py-8 flex-1 w-full">
-                <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs">
-                    <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
-                        <span class="px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-xs font-bold text-amber-900">
-                            {{ $publicacion->categoria }}
-                        </span>
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                            {{ $publicacion->estado }}
-                        </span>
+            @php
+                $fotoPrincipal = $publicacion->foto_principal;
+                $nombreObjeto = $publicacion->nombre ?? $publicacion->titulo;
+            @endphp
+
+            <!-- Contenedor Principal para Visitantes (Consulta Pública sin Sesión) -->
+            <main class="max-w-3xl mx-auto px-4 sm:px-6 py-8 flex-1 w-full">
+                <div class="bg-white rounded-3xl p-6 sm:p-8 border border-tecnm-gold/30 shadow-xs">
+                    {{-- 1. Fotografía principal con aspecto preservado y fallback institucional --}}
+                    <div class="relative w-full aspect-[4/3] bg-slate-100 rounded-2xl overflow-hidden border border-slate-100 mb-6">
+                        @if ($fotoPrincipal)
+                            <img
+                                src="{{ $fotoPrincipal->url }}"
+                                alt="{{ $nombreObjeto }}"
+                                class="w-full h-full object-cover"
+                                onerror="this.onerror=null; this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');"
+                            />
+                            <div class="hidden absolute inset-0 flex flex-col items-center justify-center bg-slate-50 text-slate-400 p-4 text-center">
+                                <svg class="w-12 h-12 mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span class="text-sm font-semibold text-slate-500">Imagen no disponible</span>
+                            </div>
+                        @else
+                            <div class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 text-slate-400 p-4 text-center">
+                                <svg class="w-12 h-12 mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span class="text-sm font-semibold text-slate-500">Imagen no disponible</span>
+                            </div>
+                        @endif
                     </div>
 
-                    <h1 class="text-2xl font-black text-slate-900 mb-2">
-                        {{ $publicacion->nombre ?? $publicacion->titulo }}
+                    {{-- 2. Nombre del objeto --}}
+                    <h1 class="text-2xl sm:text-3xl font-black text-slate-900 mb-4 break-words">
+                        {{ $nombreObjeto }}
                     </h1>
 
-                    <p class="text-xs text-slate-500 mb-6">
-                        Publicado el {{ $publicacion->created_at->format('d/m/Y H:i') }} &bull; Lugar de resguardo: <strong>{{ $publicacion->lugar_hallazgo ?? 'Biblioteca Campus Poniente' }}</strong>
-                    </p>
-
-                    <div class="prose prose-slate text-sm text-slate-700 leading-relaxed mb-8">
+                    {{-- 3. Descripción completa --}}
+                    <div class="text-sm sm:text-base text-slate-700 leading-relaxed whitespace-pre-line break-words mb-8">
                         {{ $publicacion->descripcion }}
                     </div>
 
-                    @if ($publicacion->isBajoResguardoBiblioteca())
-                        <!-- Resguardo confirmado en Biblioteca para visitantes (CA-20) -->
-                        <div class="mb-8 p-5 rounded-2xl bg-amber-50/80 border border-amber-200">
-                            <div class="flex items-start gap-3.5">
-                                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                    </svg>
-                                </div>
-                                <div class="space-y-1.5 text-xs text-amber-900 leading-relaxed">
-                                    <h3 class="text-sm font-extrabold text-amber-950">
-                                        Objeto bajo resguardo confirmado de Biblioteca
-                                    </h3>
-                                    <p>
-                                        <strong>Ubicación de resguardo:</strong> {{ $publicacion->lugar_hallazgo ?? 'Biblioteca Campus Poniente' }}
-                                    </p>
-                                    <p>
-                                        <strong>Horario de atención:</strong> Lunes a Viernes de 7:00 a 19:00 hrs.
-                                    </p>
-                                    <p class="text-amber-800 mt-2">
-                                        <strong>Instrucciones de recuperación:</strong> Preséntate en el mostrador principal de Biblioteca portando tu credencial institucional vigente y describe detalles específicos del objeto para acreditar tu legítima propiedad.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    @else
-                        <!-- Contacto protegido para visitantes sin sesión (CA-19) -->
-                        <div class="mb-8 p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs text-slate-600">
-                            <div class="flex items-center gap-2.5">
-                                <svg class="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {{-- 4. Aviso y opción visible de iniciar sesión (Información de contacto protegida) --}}
+                    <div class="mb-8 p-5 rounded-2xl bg-amber-50/70 border border-amber-200 text-amber-900">
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                 </svg>
-                                <span>Información de contacto protegida para la comunidad del TecNM. Inicia sesión para contactar al autor.</span>
+                            </div>
+                            <div class="flex-1 text-xs leading-relaxed space-y-1">
+                                <h3 class="text-sm font-bold text-amber-950">
+                                    Información de contacto protegida
+                                </h3>
+                                <p class="text-amber-900">
+                                    Por motivos de privacidad y seguridad de la comunidad del TecNM Campus Poniente, los datos de contacto, resguardo y procedimientos de reclamo están reservados para usuarios registrados.
+                                </p>
                             </div>
                         </div>
-                    @endif
+                    </div>
 
-                    <div class="pt-6 border-t border-slate-100 flex items-center justify-between">
-                        <a href="{{ route('muro') }}" class="px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors">
+                    {{-- Acciones y retorno --}}
+                    <div class="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <a href="{{ route('muro') }}" class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold text-center transition-colors">
                             Volver al Muro
                         </a>
-                        <a href="{{ route('login') }}" class="px-5 py-2.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors shadow-xs">
-                            Iniciar sesión para reclamar objeto
+                        <a href="{{ route('login') }}" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold text-center transition-colors shadow-xs">
+                            Iniciar sesión
                         </a>
                     </div>
                 </div>

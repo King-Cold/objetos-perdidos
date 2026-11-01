@@ -74,6 +74,23 @@ Route::get('/publicaciones/{id}', function ($id) {
     return view('publicaciones.show', compact('publicacion'));
 })->name('publicaciones.show');
 
+// Solicitud de autenticación para apartados privados desde el muro público (HU Muro / HU-02)
+Route::get('/publicaciones/{id}/detalles-privados', function ($id) {
+    $publicacion = Publicacion::find($id);
+
+    if (! $publicacion || ! $publicacion->isDisponible()) {
+        return redirect()->route('muro')->with('warning', 'Esta publicación no está disponible para consulta');
+    }
+
+    session()->put('intended_publication_id', $publicacion->id);
+
+    if (! Auth::check()) {
+        return redirect()->guest(route('login'));
+    }
+
+    return redirect()->route('publicaciones.show', $publicacion->id);
+})->name('publicaciones.detalles-privados');
+
 // Acceso controlado y seguro a fotografías (público si la publicación está aprobada, privado para pendientes)
 Route::get('/fotografias/{fotografia}', [FotografiaController::class, 'show'])->name('fotografias.show');
 

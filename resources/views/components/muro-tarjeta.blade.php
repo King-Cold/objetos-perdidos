@@ -47,7 +47,7 @@
     {{-- Botón de acción con color institucional rojo vino --}}
     <div class="p-5 pt-0">
         <a
-            href="{{ route('publicaciones.show', $publicacion->id) }}"
+            href="{{ auth()->check() ? route('publicaciones.show', $publicacion->id) : route('publicaciones.detalles-privados', $publicacion->id) }}"
             class="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors shadow-xs focus:outline-none focus:ring-2 focus:ring-tecnm-gold focus:ring-offset-2"
         >
             <span>Ver más detalles</span>

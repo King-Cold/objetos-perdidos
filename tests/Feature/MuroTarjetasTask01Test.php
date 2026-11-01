@@ -85,7 +85,11 @@ class MuroTarjetasTask01Test extends TestCase
         $response->assertSee($descripcionCompleta);
         $response->assertSee($fotoPrincipal->url);
         $response->assertSee('Ver más detalles');
-        $response->assertSee(route('publicaciones.show', $publicacion->id));
+        $response->assertSee(route('publicaciones.detalles-privados', $publicacion->id));
+
+        $responseAuth = $this->actingAs($autor)->get('/');
+        $responseAuth->assertOk();
+        $responseAuth->assertSee(route('publicaciones.show', $publicacion->id));
 
         // 2. Datos privados rigurosamente excluidos de la tarjeta pública
         $response->assertDontSee('Profesor Roberto Gomez');
@@ -530,6 +534,144 @@ class MuroTarjetasTask01Test extends TestCase
         $resPage1Reload = $this->get('/?page=1');
         $idsPage1Reload = $resPage1Reload->viewData('publicaciones')->pluck('id')->toArray();
         $this->assertSame($idsPage1, $idsPage1Reload);
+    }
+
+    /**
+     * Test 13: Enlace «Ver más detalles» en visitante solicita autenticación,
+     * guarda intended_publication_id para el retorno y redirige a login.
+     * Con usuario autenticado, redirige o accede directamente a publicaciones.show.
+     */
+    public function test_ver_mas_detalles_conecta_autenticacion_y_guarda_retorno(): void
+    {
+        $user = User::factory()->create();
+        $publicacion = Publicacion::factory()->create([
+            'user_id' => $user->id,
+            'estado' => Publicacion::ESTADO_APROBADA,
+            'disponible' => true,
+        ]);
+
+        // 1. Visitante sin sesión es redirigido a login y registra intended_publication_id
+        $responseGuest = $this->get(route('publicaciones.detalles-privados', $publicacion->id));
+        $responseGuest->assertRedirect(route('login'));
+        $this->assertEquals($publicacion->id, session('intended_publication_id'));
+
+        // 2. Usuario autenticado accede directamente
+        $responseAuth = $this->actingAs($user)->get(route('publicaciones.detalles-privados', $publicacion->id));
+        $responseAuth->assertRedirect(route('publicaciones.show', $publicacion->id));
+    }
+
+    /**
+     * Test 14: Opción visible «Encontré un objeto» está presente en el muro para visitantes y autenticados,
+     * conectando la autenticación cuando no hay sesión.
+     */
+    public function test_opcion_encontre_un_objeto_visible_y_conecta_autenticacion(): void
+    {
+        $user = User::factory()->create();
+
+        // 1. Visitante ve la opción «Encontré un objeto» en el muro
+        $responseMuro = $this->get('/');
+        $responseMuro->assertOk();
+        $responseMuro->assertSee('Encontré un objeto');
+        $responseMuro->assertSee(route('reportes.create'));
+
+        // 2. Al seleccionar la opción sin sesión, se exige autenticación hacia el formulario
+        $responseCreateGuest = $this->get(route('reportes.create'));
+        $responseCreateGuest->assertRedirect(route('login'));
+
+        // 3. Con usuario autenticado, ingresa al formulario
+        $responseCreateAuth = $this->actingAs($user)->get(route('reportes.create'));
+        $responseCreateAuth->assertOk();
+    }
+
+    /**
+     * Test 15: Estado vacío muestra «No hay objetos disponibles» y mantiene accesible «Encontré un objeto».
+     */
+    public function test_estado_vacio_muestra_no_hay_objetos_disponibles_y_boton_encontre_un_objeto(): void
+    {
+        $user = User::factory()->create();
+
+        // 1. Visitante sin registros en el muro
+        $resGuest = $this->get('/');
+        $resGuest->assertOk();
+        $resGuest->assertSee('No hay objetos disponibles');
+        $resGuest->assertSee('Encontré un objeto');
+        $resGuest->assertSee(route('reportes.create'));
+
+        // 2. Usuario autenticado sin registros en el muro
+        $resAuth = $this->actingAs($user)->get('/');
+        $resAuth->assertOk();
+        $resAuth->assertSee('No hay objetos disponibles');
+        $resAuth->assertSee('Encontré un objeto');
+        $resAuth->assertSee(route('reportes.create'));
+    }
+
+    /**
+     * Test 16: Consulta directa de detalle sin sesión (/publicaciones/{id})
+     * mantiene exclusivamente los 3 datos públicos y la opción de iniciar sesión.
+     */
+    public function test_consulta_detalle_sin_sesion_mantiene_estrictamente_datos_publicos(): void
+    {
+        $autor = User::factory()->create([
+            'name' => 'Ingeniera Laura Gomez',
+            'phone' => '9998887766',
+        ]);
+
+        $descripcionCompleta = 'Laptop Lenovo ThinkPad color negro con calcomanía de Python en la esquina derecha.';
+
+        $publicacion = Publicacion::factory()->create([
+            'user_id' => $autor->id,
+            'nombre' => 'Laptop Lenovo ThinkPad',
+            'titulo' => 'Laptop Lenovo ThinkPad',
+            'descripcion' => $descripcionCompleta,
+            'categoria' => 'Electrónica',
+            'estado' => Publicacion::ESTADO_APROBADA,
+            'disponible' => true,
+            'area_zona' => 'Edificio D - Laboratorio de Redes',
+            'lugar_hallazgo' => 'Laboratorio D-301',
+            'ubicacion_especifica' => 'Mesa de pruebas número 4',
+            'situacion_resguardo' => Publicacion::RESGUARDO_AUTOR,
+            'fecha_hallazgo' => '2026-10-30',
+        ]);
+
+        $fotoPrincipal = Fotografia::create([
+            'publicacion_id' => $publicacion->id,
+            'ruta' => 'hallazgos/laptop_principal.jpg',
+            'nombre_original' => 'laptop_principal.jpg',
+            'mime_type' => 'image/jpeg',
+            'tamano_bytes' => 150000,
+            'es_principal' => true,
+        ]);
+
+        $fotoSecundaria = Fotografia::create([
+            'publicacion_id' => $publicacion->id,
+            'ruta' => 'hallazgos/laptop_extra.jpg',
+            'nombre_original' => 'laptop_extra.jpg',
+            'mime_type' => 'image/jpeg',
+            'tamano_bytes' => 120000,
+            'es_principal' => false,
+        ]);
+
+        $response = $this->get(route('publicaciones.show', $publicacion->id));
+        $response->assertOk();
+
+        // 1. Datos públicos exclusivamente permitidos
+        $response->assertSee('Laptop Lenovo ThinkPad');
+        $response->assertSee($fotoPrincipal->url);
+        $response->assertSee($descripcionCompleta);
+        $response->assertSee('Información de contacto protegida');
+        $response->assertSee('Iniciar sesión');
+        $response->assertSee(route('login'));
+
+        // 2. Datos privados rigurosamente ausentes
+        $response->assertDontSee('Ingeniera Laura Gomez');
+        $response->assertDontSee('9998887766');
+        $response->assertDontSee('2026-10-30');
+        $response->assertDontSee('Publicado el');
+        $response->assertDontSee('Edificio D - Laboratorio de Redes');
+        $response->assertDontSee('Laboratorio D-301');
+        $response->assertDontSee('Mesa de pruebas número 4');
+        $response->assertDontSee($fotoSecundaria->url);
+        $response->assertDontSee(Publicacion::RESGUARDO_AUTOR);
     }
 }
 

@@ -80,8 +80,14 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                             </svg>
                         </div>
-                        <h4 class="text-base font-bold text-slate-800 mb-1">No hay publicaciones disponibles</h4>
-                        <p class="text-xs text-slate-500">Actualmente no existen objetos pendientes de entrega o reportados.</p>
+                        <h4 class="text-base font-bold text-slate-800 mb-1">No hay objetos disponibles</h4>
+                        <p class="text-xs text-slate-500 mb-6">Actualmente no existen objetos pendientes de entrega o reportados en el campus.</p>
+                        <a href="{{ route('reportes.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors shadow-xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span>Encontré un objeto</span>
+                        </a>
                     </div>
                 @endif
             </div>
@@ -120,11 +126,17 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-3">
-                        <a href="{{ route('login') }}" class="px-3.5 py-1.5 rounded-lg bg-tecnm-wine hover:bg-tecnm-wine-hover text-white font-bold text-xs transition-colors shadow-xs">
+                    <div class="flex items-center gap-2 sm:gap-3">
+                        <a href="{{ route('reportes.create') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-tecnm-wine hover:bg-tecnm-wine-hover text-white font-bold text-xs transition-colors shadow-xs">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span>Encontré un objeto</span>
+                        </a>
+                        <a href="{{ route('login') }}" class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors">
                             Iniciar sesión
                         </a>
-                        <a href="{{ route('register') }}" class="hidden sm:inline-block px-3.5 py-1.5 rounded-lg border border-slate-300 hover:bg-white text-slate-700 font-bold text-xs transition-colors">
+                        <a href="{{ route('register') }}" class="hidden sm:inline-block px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors">
                             Crear cuenta
                         </a>
                     </div>
@@ -167,10 +179,18 @@
                 @endif
 
                 <!-- Listado de Publicaciones -->
-                <div class="mb-6 flex items-center justify-between">
+                <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <h2 class="text-xl font-black text-slate-900 tracking-tight">Publicaciones Recientes</h2>
                         <p class="text-xs text-slate-500 mt-0.5">Objetos resguardados en Biblioteca o reportados en el campus.</p>
+                    </div>
+                    <div>
+                        <a href="{{ route('reportes.create') }}" class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors shadow-xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span>Encontré un objeto</span>
+                        </a>
                     </div>
                 </div>
 
@@ -190,8 +210,14 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                             </svg>
                         </div>
-                        <h3 class="text-base font-bold text-slate-800 mb-1">No hay publicaciones disponibles</h3>
-                        <p class="text-xs text-slate-500">Actualmente no existen objetos pendientes de entrega o reportados.</p>
+                        <h3 class="text-base font-bold text-slate-800 mb-1">No hay objetos disponibles</h3>
+                        <p class="text-xs text-slate-500 mb-6">Actualmente no existen objetos pendientes de entrega o reportados en el campus.</p>
+                        <a href="{{ route('reportes.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors shadow-xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span>Encontré un objeto</span>
+                        </a>
                     </div>
                 @endif
             </main>
