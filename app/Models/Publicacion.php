@@ -12,34 +12,18 @@ class Publicacion extends Model
 {
     use HasFactory;
 
-    /**
-     * Zona horaria oficial para operaciones de captura y fechas del campus.
-     */
     public const TIMEZONE = 'America/Merida';
 
-    /**
-     * Estado inicial obligatorio para nuevos reportes de hallazgos.
-     */
     public const ESTADO_PENDIENTE = 'Pendiente de aprobación';
-
-    /**
-     * Estado cuando el administrador solicita correcciones al autor (HU-07 / Tarea 07.3).
-     */
-    public const ESTADO_CORRECCION_SOLICITADA = 'Corrección solicitada';
-
-    /**
-     * Estado cuando el reporte es aprobado para publicación en el muro (HU-07 / Tarea 07.4).
-     */
     public const ESTADO_APROBADA = 'Aprobada';
-
-    /**
-     * Estado cuando el reporte es cancelado administrativamente (HU-07 / Tarea 07.5).
-     */
+    public const ESTADO_REQUIERE_CORRECCION = 'Requiere corrección';
+    public const ESTADO_CORRECCION_SOLICITADA = 'Corrección solicitada';
     public const ESTADO_CANCELADO = 'Cancelado';
+    public const ESTADO_DEVUELTO = 'Devuelto';
 
-    /**
-     * Días naturales de vigencia de publicación a partir de la primera aprobación (HU-07 / Tarea 07.4).
-     */
+    public const RESGUARDO_AUTOR = 'En posesión del autor';
+    public const RESGUARDO_CONFIRMADO = 'Bajo resguardo confirmado de biblioteca';
+
     public const DIAS_VIGENCIA = 14;
 
     protected $table = 'publicaciones';
@@ -68,6 +52,13 @@ class Publicacion extends Model
         'disponible',
         'devolucion_en_proceso',
         'incidencia_abierta',
+        'motivo_correccion',
+        'observaciones_admin',
+        'situacion_resguardo',
+        'motivo_cancelacion',
+        'fecha_cancelacion',
+        'estado_devolucion',
+        'tiene_incidencia',
     ];
 
     protected function casts(): array
@@ -83,6 +74,8 @@ class Publicacion extends Model
             'fecha_aprobacion' => 'datetime',
             'fecha_vencimiento' => 'datetime',
             'version' => 'integer',
+            'fecha_cancelacion' => 'datetime',
+            'tiene_incidencia' => 'boolean',
         ];
     }
 
@@ -92,12 +85,16 @@ class Publicacion extends Model
             if (empty($publicacion->folio)) {
                 $publicacion->folio = static::generarFolio();
             }
+
             if (empty($publicacion->fecha_captura)) {
                 $publicacion->fecha_captura = Carbon::now(self::TIMEZONE);
             }
+
             if (empty($publicacion->fecha_envio_revision)) {
-                $publicacion->fecha_envio_revision = $publicacion->fecha_captura ?? Carbon::now(self::TIMEZONE);
+                $publicacion->fecha_envio_revision = $publicacion->fecha_captura
+                    ?? Carbon::now(self::TIMEZONE);
             }
+
             if (empty($publicacion->titulo) && ! empty($publicacion->nombre)) {
                 $publicacion->titulo = $publicacion->nombre;
             } elseif (empty($publicacion->nombre) && ! empty($publicacion->titulo)) {
@@ -107,24 +104,19 @@ class Publicacion extends Model
     }
 
     /**
-     * Genera un folio único irrepetible con estructura:
-     * OBJ-YYYYMMDD-XXXX (ej. OBJ-20261031-0001).
-     *
-     * - OBJ: Identificador de tipo de reporte ("Objeto").
-     * - YYYYMMDD: Fecha del servidor en la zona horaria del campus (America/Merida).
-     * - XXXX: Consecutivo numérico diario de 4 dígitos con prevención de colisiones.
+     * Genera un folio con formato OBJ-YYYYMMDD-XXXX.
      */
     public static function generarFolio(): string
     {
         $fechaPrefijo = Carbon::now(self::TIMEZONE)->format('Ymd');
         $prefix = "OBJ-{$fechaPrefijo}-";
 
-        // Buscar el último folio del día para determinar la secuencia siguiente
         $ultimo = static::where('folio', 'like', $prefix . '%')
             ->orderByDesc('id')
             ->first();
 
         $secuencia = 1;
+
         if ($ultimo && preg_match('/-(\d{4})$/', (string) $ultimo->folio, $matches)) {
             $secuencia = ((int) $matches[1]) + 1;
         }
@@ -132,6 +124,7 @@ class Publicacion extends Model
         do {
             $folio = sprintf('%s%04d', $prefix, $secuencia);
             $existe = static::where('folio', $folio)->exists();
+
             if ($existe) {
                 $secuencia++;
             }
@@ -140,81 +133,61 @@ class Publicacion extends Model
         return $folio;
     }
 
-    /**
-     * Relación: El reporte pertenece a un usuario (autor del hallazgo).
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Relación: Un reporte tiene asociadas entre 1 y 5 fotografías.
-     */
     public function fotografias(): HasMany
     {
         return $this->hasMany(Fotografia::class);
     }
 
-    /**
-     * Relación: Historial de decisiones de moderación tomadas sobre este reporte (HU-07 / Tarea 07.3).
-     */
     public function decisiones(): HasMany
     {
-        return $this->hasMany(DecisionModeracion::class)->orderBy('id', 'desc');
+        return $this->hasMany(DecisionModeracion::class)
+            ->orderBy('id', 'desc');
     }
 
-    /**
-     * Comprueba si el reporte se encuentra en estado de corrección solicitada.
-     */
     public function isCorreccionSolicitada(): bool
     {
         return $this->estado === self::ESTADO_CORRECCION_SOLICITADA;
     }
 
-    /**
-     * Comprueba si el reporte se encuentra en estado cancelado (HU-07 / Tarea 07.5).
-     */
     public function isCancelado(): bool
     {
-        return in_array($this->estado, [self::ESTADO_CANCELADO, 'Cancelada'], true);
+        return in_array(
+            $this->estado,
+            [self::ESTADO_CANCELADO, 'Cancelada'],
+            true
+        );
     }
 
-    /**
-     * Comprueba si el reporte se encuentra en un estado compatible con cancelación administrativa.
-     */
     public function isCancelable(): bool
     {
-        return ! $this->isCancelado() && $this->estado !== 'Devuelto';
+        return ! $this->isCancelado()
+            && $this->estado !== self::ESTADO_DEVUELTO;
     }
 
-    /**
-     * Comprueba si la publicación ya superó su vigencia de 14 días naturales (HU-07 / Tarea 07.4).
-     */
     public function isVencida(): bool
     {
         if ($this->fecha_vencimiento === null) {
             return false;
         }
 
-        return Carbon::now(self::TIMEZONE)->greaterThanOrEqualTo($this->fecha_vencimiento);
+        return Carbon::now(self::TIMEZONE)
+            ->greaterThanOrEqualTo($this->fecha_vencimiento);
     }
 
-    /**
-     * Comprueba si existen restricciones de negocio que impidan la disponibilidad en el muro (HU-07 / Tarea 07.4).
-     */
     public function hasRestriccionPublicacion(): bool
     {
         return $this->isVencida()
             || (bool) $this->devolucion_en_proceso
             || (bool) $this->incidencia_abierta
             || $this->isCancelado()
-            || $this->estado === 'Devuelto';
+            || $this->estado === self::ESTADO_DEVUELTO;
     }
 
-    /**
-     * Comprueba disponibilidad real conforme a CA-29, CT-10 y vigencia de HU-07 (14 días).
-     */
     public function isDisponible(): bool
     {
         return (bool) $this->disponible
@@ -222,9 +195,6 @@ class Publicacion extends Model
             && ! $this->hasRestriccionPublicacion();
     }
 
-    /**
-     * Scope para consultar reportes actualmente vigentes y disponibles en el muro institucional (HU-07 / Tarea 07.4).
-     */
     public function scopeDisponiblesMuro($query)
     {
         $ahora = Carbon::now(self::TIMEZONE);
@@ -233,26 +203,225 @@ class Publicacion extends Model
             ->where('estado', self::ESTADO_APROBADA)
             ->where(function ($q) use ($ahora) {
                 $q->whereNull('fecha_vencimiento')
-                  ->orWhere('fecha_vencimiento', '>', $ahora);
+                    ->orWhere('fecha_vencimiento', '>', $ahora);
             })
             ->where('devolucion_en_proceso', false)
             ->where('incidencia_abierta', false);
     }
 
-    /**
-     * Comprueba si el objeto está bajo resguardo confirmado de biblioteca (CA-20).
-     */
+    public function isExpirado(): bool
+    {
+        return $this->isVencida();
+    }
+
+    public function getVigenciaTextoAttribute(): string
+    {
+        if (! $this->fecha_primera_aprobacion) {
+            return 'Aún no inicia su vigencia';
+        }
+
+        if ($this->fecha_vencimiento) {
+            if ($this->isExpirado()) {
+                return 'Vencido el '
+                    . $this->fecha_vencimiento->format('d/m/Y');
+            }
+
+            return 'Vence el '
+                . $this->fecha_vencimiento->format('d/m/Y');
+        }
+
+        return 'En revisión';
+    }
+
+    public function getFechaRegistroTextoAttribute(): string
+    {
+        if (! empty($this->fecha_captura)) {
+            $raw = $this->getRawOriginal('fecha_captura');
+
+            if ($raw) {
+                $formatted = Carbon::parse($raw)->format('d/m/Y • h:i a');
+
+                return str_replace(
+                    ['am', 'pm'],
+                    ['a. m.', 'p. m.'],
+                    $formatted
+                );
+            }
+
+            $formatted = $this->fecha_captura->format('d/m/Y • h:i a');
+
+            return str_replace(
+                ['am', 'pm'],
+                ['a. m.', 'p. m.'],
+                $formatted
+            );
+        }
+
+        if (! empty($this->created_at)) {
+            $formatted = $this->created_at
+                ->timezone(self::TIMEZONE)
+                ->format('d/m/Y • h:i a');
+
+            return str_replace(
+                ['am', 'pm'],
+                ['a. m.', 'p. m.'],
+                $formatted
+            );
+        }
+
+        return '';
+    }
+
+    public function getFechaCancelacionTextoAttribute(): string
+    {
+        if (! $this->fecha_cancelacion) {
+            return '';
+        }
+
+        $formatted = $this->fecha_cancelacion
+            ->timezone(self::TIMEZONE)
+            ->format('d/m/Y • h:i a');
+
+        return str_replace(
+            ['am', 'pm'],
+            ['a. m.', 'p. m.'],
+            $formatted
+        );
+    }
+
+    public function getFechaHallazgoTextoAttribute(): string
+    {
+        if (! $this->fecha_hallazgo) {
+            return 'No especificada';
+        }
+
+        $fechaStr = $this->fecha_hallazgo instanceof Carbon
+            ? $this->fecha_hallazgo->format('d/m/Y')
+            : Carbon::parse($this->fecha_hallazgo)->format('d/m/Y');
+
+        if (! empty($this->hora_hallazgo)) {
+            try {
+                $horaRaw = Carbon::parse($this->hora_hallazgo)
+                    ->format('h:i a');
+
+                $horaStr = str_replace(
+                    ['am', 'pm'],
+                    ['a. m.', 'p. m.'],
+                    $horaRaw
+                );
+
+                return "{$fechaStr} • {$horaStr}";
+            } catch (\Throwable $e) {
+                return "{$fechaStr} • {$this->hora_hallazgo}";
+            }
+        }
+
+        return $fechaStr;
+    }
+
+    public function isEnCorreccion(): bool
+    {
+        return in_array(
+            $this->estado,
+            [self::ESTADO_REQUIERE_CORRECCION, self::ESTADO_CORRECCION_SOLICITADA],
+            true
+        );
+    }
+
+    public function puedeEditarse(): bool
+    {
+        if (
+            $this->estado === self::ESTADO_CANCELADO
+            || $this->estado === self::ESTADO_DEVUELTO
+        ) {
+            return false;
+        }
+
+        if ($this->isExpirado()) {
+            return false;
+        }
+
+        if (
+            $this->tiene_incidencia
+            || in_array(
+                $this->estado_devolucion,
+                ['Pendiente de verificación', 'Verificada', 'En incidencia'],
+                true
+            )
+        ) {
+            return false;
+        }
+
+        if ($this->situacion_resguardo === self::RESGUARDO_CONFIRMADO) {
+            return false;
+        }
+
+        if (
+            in_array(
+                $this->estado,
+                [
+                    self::ESTADO_PENDIENTE,
+                    self::ESTADO_REQUIERE_CORRECCION,
+                    self::ESTADO_CORRECCION_SOLICITADA,
+                ],
+                true
+            )
+        ) {
+            return true;
+        }
+
+        if (
+            $this->estado === self::ESTADO_APROBADA
+            && (bool) $this->disponible
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function puedeCancelarse(): bool
+    {
+        if (
+            ! in_array(
+                $this->estado,
+                [
+                    self::ESTADO_PENDIENTE,
+                    self::ESTADO_REQUIERE_CORRECCION,
+                    self::ESTADO_CORRECCION_SOLICITADA,
+                ],
+                true
+            )
+        ) {
+            return false;
+        }
+
+        if ($this->tiene_incidencia || ! empty($this->estado_devolucion)) {
+            return false;
+        }
+
+        if ($this->situacion_resguardo === self::RESGUARDO_CONFIRMADO) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function getFotoPrincipalAttribute(): ?Fotografia
+    {
+        return $this->fotografias->firstWhere('es_principal', true)
+            ?? $this->fotografias->first();
+    }
+
     public function isBajoResguardoBiblioteca(): bool
     {
         $lugar = mb_strtolower((string) ($this->lugar_hallazgo ?? ''));
         $area = mb_strtolower((string) ($this->area_zona ?? ''));
 
-        return str_contains($lugar, 'biblioteca') || str_contains($area, 'biblioteca');
+        return str_contains($lugar, 'biblioteca')
+            || str_contains($area, 'biblioteca');
     }
 
-    /**
-     * Scope para filtrar únicamente los reportes que se encuentran pendientes de revisión administrativa (HU-07 / Tarea 07.1).
-     */
     public function scopePendientesRevision($query)
     {
         return $query->whereIn('estado', [
@@ -262,9 +431,6 @@ class Publicacion extends Model
         ]);
     }
 
-    /**
-     * Comprueba si el reporte está disponible para moderación administrativa (HU-07).
-     */
     public function isPendienteRevision(): bool
     {
         return in_array($this->estado, [
@@ -274,9 +440,6 @@ class Publicacion extends Model
         ], true);
     }
 
-    /**
-     * Actualiza la fecha del último reenvío a revisión cuando un reporte es corregido (HU-07 / Requerimiento 7).
-     */
     public function reenviarARevision(): void
     {
         $this->update([

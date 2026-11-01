@@ -75,7 +75,7 @@
                                         </span>
                                         <span class="text-[11px] text-slate-400">{{ $pub->created_at->format('d/m/Y') }}</span>
                                     </div>
-                                    <h4 class="text-base font-bold text-slate-900 mb-1.5">{{ $pub->titulo }}</h4>
+                                    <h4 class="text-base font-bold text-slate-900 mb-1.5">{{ $pub->nombre ?? $pub->titulo }}</h4>
                                     <p class="text-xs text-slate-600 line-clamp-3 mb-3">{{ $pub->descripcion }}</p>
                                     <div class="text-[11px] text-slate-500 mb-4">
                                         <strong>Lugar:</strong> {{ $pub->lugar_hallazgo ?? 'Campus Poniente' }}
@@ -200,7 +200,7 @@
                                         </span>
                                         <span class="text-[11px] text-slate-400">{{ $pub->created_at->format('d/m/Y') }}</span>
                                     </div>
-                                    <h3 class="text-base font-bold text-slate-900 mb-1.5">{{ $pub->titulo }}</h3>
+                                    <h3 class="text-base font-bold text-slate-900 mb-1.5">{{ $pub->nombre ?? $pub->titulo }}</h3>
                                     <p class="text-xs text-slate-600 line-clamp-3 mb-3">{{ $pub->descripcion }}</p>
                                     <div class="text-[11px] text-slate-500 mb-4">
                                         <strong>Lugar:</strong> {{ $pub->lugar_hallazgo ?? 'Campus Poniente' }}

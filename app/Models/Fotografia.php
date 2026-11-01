@@ -19,7 +19,15 @@ class Fotografia extends Model
         'nombre_original',
         'mime_type',
         'tamano_bytes',
+        'es_principal',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'es_principal' => 'boolean',
+        ];
+    }
 
     /**
      * Relación: La fotografía pertenece a una publicación (reporte de hallazgo).

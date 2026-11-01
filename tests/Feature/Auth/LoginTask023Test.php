@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Fotografia;
 use App\Models\Publicacion;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -112,13 +114,31 @@ class LoginTask023Test extends TestCase
 
         $reporte = Publicacion::factory()->create([
             'user_id' => $owner->id,
+            'nombre' => 'Audífonos Bluetooth',
             'titulo' => 'Audífonos Bluetooth',
-            'descripcion' => 'Audífonos perdidos en biblioteca.',
+            'descripcion' => 'Audífonos perdidos en biblioteca con longitud reglamentaria mayor a cincuenta caracteres.',
+            'fecha_captura' => Carbon::now(Publicacion::TIMEZONE),
+            'fecha_hallazgo' => Carbon::now(Publicacion::TIMEZONE)->format('Y-m-d'),
+            'area_zona' => 'Biblioteca',
+            'ubicacion_especifica' => 'Mesa 4',
+        ]);
+
+        Fotografia::create([
+            'publicacion_id' => $reporte->id,
+            'ruta' => 'hallazgos/test_login023.jpg',
+            'nombre_original' => 'test_login023.jpg',
+            'mime_type' => 'image/jpeg',
+            'tamano_bytes' => 102400,
+            'es_principal' => true,
         ]);
 
         $response = $this->actingAs($owner)->put(route('reportes.update', $reporte->id), [
+            'nombre' => 'Audífonos Bluetooth Sony',
             'titulo' => 'Audífonos Bluetooth Sony',
-            'descripcion' => 'Audífonos negros encontrados en mesa 4.',
+            'descripcion' => 'Audífonos negros encontrados en mesa 4 con longitud adecuada mayor a cincuenta caracteres.',
+            'fecha_hallazgo' => Carbon::now(Publicacion::TIMEZONE)->format('Y-m-d'),
+            'area_zona' => 'Biblioteca',
+            'ubicacion_especifica' => 'Mesa 4',
         ]);
 
         $response->assertRedirect(route('reportes.mis-reportes'));

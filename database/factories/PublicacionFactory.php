@@ -24,7 +24,7 @@ class PublicacionFactory extends Factory
             'folio' => 'OBJ-' . $now->format('Ymd') . '-' . fake()->unique()->numerify('####'),
             'nombre' => $titulo,
             'titulo' => $titulo,
-            'descripcion' => fake()->paragraph(),
+            'descripcion' => 'Objeto encontrado en instalaciones del campus en buen estado de conservación general.',
             'fecha_hallazgo' => $now->format('Y-m-d'),
             'hora_hallazgo' => '10:00',
             'area_zona' => 'Biblioteca Campus Poniente',
@@ -51,6 +51,48 @@ class PublicacionFactory extends Factory
         return $this->state(fn () => [
             'disponible' => false,
             'estado' => 'Pendiente de aprobación',
+            'fecha_primera_aprobacion' => null,
+            'fecha_vencimiento' => null,
+        ]);
+    }
+
+    public function requiereCorreccion(string $motivo = 'Favor de especificar con mayor detalle la ubicación del hallazgo'): static
+    {
+        return $this->state(fn () => [
+            'disponible' => false,
+            'estado' => 'Requiere corrección',
+            'motivo_correccion' => $motivo,
+            'observaciones_admin' => $motivo,
+            'fecha_primera_aprobacion' => null,
+            'fecha_vencimiento' => null,
+        ]);
+    }
+
+    public function cancelado(string $motivo = 'Reporte duplicado por error'): static
+    {
+        return $this->state(fn () => [
+            'disponible' => false,
+            'estado' => 'Cancelado',
+            'motivo_cancelacion' => $motivo,
+            'fecha_cancelacion' => Carbon::now(Publicacion::TIMEZONE),
+        ]);
+    }
+
+    public function bajoResguardo(): static
+    {
+        return $this->state(fn () => [
+            'situacion_resguardo' => Publicacion::RESGUARDO_CONFIRMADO,
+        ]);
+    }
+
+    public function expirado(): static
+    {
+        $pastApproval = Carbon::now(Publicacion::TIMEZONE)->subDays(20);
+        return $this->state(fn () => [
+            'disponible' => false,
+            'estado' => 'Aprobada',
+            'fecha_primera_aprobacion' => $pastApproval,
+            'fecha_vencimiento' => $pastApproval->copy()->addDays(14),
         ]);
     }
 }

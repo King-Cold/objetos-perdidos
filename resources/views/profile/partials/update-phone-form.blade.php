@@ -13,6 +13,11 @@
             if (this.$refs.phoneInput) {
                 this.$refs.phoneInput.value = this.originalPhone;
             }
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = @js(route('reportes.mis-reportes'));
+            }
         }
     }"
 >

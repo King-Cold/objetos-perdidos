@@ -21,9 +21,9 @@ Route::get('/', function (Request $request) {
         $buscar = trim((string) $request->input('buscar'));
         $query->where(function ($q) use ($buscar) {
             $q->where('nombre', 'like', "%{$buscar}%")
-              ->orWhere('titulo', 'like', "%{$buscar}%")
-              ->orWhere('descripcion', 'like', "%{$buscar}%")
-              ->orWhere('folio', 'like', "%{$buscar}%");
+                ->orWhere('titulo', 'like', "%{$buscar}%")
+                ->orWhere('descripcion', 'like', "%{$buscar}%")
+                ->orWhere('folio', 'like', "%{$buscar}%");
         });
     }
 
@@ -43,9 +43,9 @@ Route::get('/muro', function (Request $request) {
         $buscar = trim((string) $request->input('buscar'));
         $query->where(function ($q) use ($buscar) {
             $q->where('nombre', 'like', "%{$buscar}%")
-              ->orWhere('titulo', 'like', "%{$buscar}%")
-              ->orWhere('descripcion', 'like', "%{$buscar}%")
-              ->orWhere('folio', 'like', "%{$buscar}%");
+                ->orWhere('titulo', 'like', "%{$buscar}%")
+                ->orWhere('descripcion', 'like', "%{$buscar}%")
+                ->orWhere('folio', 'like', "%{$buscar}%");
         });
     }
 
@@ -106,42 +106,24 @@ Route::middleware('auth')->group(function () {
     Route::get('/reportes/crear', [ReporteController::class, 'create'])->name('reportes.create');
     Route::post('/reportes', [ReporteController::class, 'store'])->name('reportes.store');
 
-    // Mis Reportes de Usuario General (CA-13, CA-16, Tarea 05.5)
-    Route::get('/reportes/mis-reportes', function () {
-        $reportes = Publicacion::with(['fotografias', 'user'])->where('user_id', Auth::id())->latest()->get();
-        return view('reportes.mis-reportes', compact('reportes'));
-    })->name('reportes.mis-reportes');
+        // Mis Reportes de Usuario General (HU-06 Tarea 06.1: CA-01 a CA-05)
+    Route::get('/reportes/mis-reportes', [ReporteController::class, 'index'])
+        ->name('reportes.mis-reportes');
+
+    // Detalle privado de reporte propio (HU-06 Tarea 06.1: CA-06, CA-07, CA-08)
+    Route::get('/reportes/{id}', [ReporteController::class, 'show'])
+        ->name('reportes.show');
 
     // Acceso privado y controlado a fotografías de reportes (Tarea 05.5)
     Route::get('/fotografias/{fotografia}', [FotografiaController::class, 'show'])->name('fotografias.show');
 
-    // Edición con comprobación estricta de autoría (CA-13)
-    Route::get('/reportes/{id}/editar', function ($id) {
-        $publicacion = Publicacion::findOrFail($id);
+    // Edición con comprobación estricta de autoría y estado (HU-06 Tarea 06.2: CA-09 a CA-17, CA-22, CA-23)
+    Route::get('/reportes/{id}/editar', [ReporteController::class, 'edit'])->name('reportes.edit');
+    Route::put('/reportes/{id}', [ReporteController::class, 'update'])->name('reportes.update');
 
-        if ($publicacion->user_id !== Auth::id() && ! Auth::user()->isAdmin()) {
-            abort(403, 'No tienes permiso para realizar esta acción');
-        }
-
-        return view('reportes.edit', compact('publicacion'));
-    })->name('reportes.edit');
-
-    Route::put('/reportes/{id}', function (Request $request, $id) {
-        $publicacion = Publicacion::findOrFail($id);
-
-        if ($publicacion->user_id !== Auth::id() && ! Auth::user()->isAdmin()) {
-            abort(403, 'No tienes permiso para realizar esta acción');
-        }
-
-        $validated = $request->validate([
-            'titulo' => ['required', 'string', 'max:150'],
-            'descripcion' => ['required', 'string'],
-        ]);
-
-        $publicacion->update($validated);
-
-        return redirect()->route('reportes.mis-reportes')->with('status', 'Reporte actualizado correctamente');
-    })->name('reportes.update');
+    // Cancelación permitida de reportes propios (HU-06 Tarea 06.5: CA-31 a CA-40)
+    Route::get('/reportes/{id}/cancelar', [ReporteController::class, 'confirmCancel'])->name('reportes.cancelar');
+    Route::match(['post', 'delete'], '/reportes/{id}/cancelar', [ReporteController::class, 'cancel'])->name('reportes.cancel');
 
     // Perfil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

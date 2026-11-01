@@ -25,7 +25,7 @@
                     </div>
 
                     <h1 class="text-2xl font-black text-slate-900 mb-2">
-                        {{ $publicacion->titulo }}
+                        {{ $publicacion->nombre ?? $publicacion->titulo }}
                     </h1>
 
                     <p class="text-xs text-slate-500 mb-6">
@@ -162,7 +162,7 @@
                     </div>
 
                     <h1 class="text-2xl font-black text-slate-900 mb-2">
-                        {{ $publicacion->titulo }}
+                        {{ $publicacion->nombre ?? $publicacion->titulo }}
                     </h1>
 
                     <p class="text-xs text-slate-500 mb-6">
