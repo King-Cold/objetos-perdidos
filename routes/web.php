@@ -10,53 +10,51 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 // Muro público institucional (CA-08, CA-19, CA-26)
-Route::get('/', function (Request $request) {
-    if (! \Illuminate\Support\Facades\Schema::hasTable('publicaciones')) {
-        return view('muro', ['publicaciones' => collect()]);
+$muroHandler = function (Request $request) {
+    try {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('publicaciones')) {
+            return view('muro', [
+                'publicaciones' => collect(),
+                'errorConsulta' => false,
+            ]);
+        }
+
+        $query = Publicacion::disponiblesMuro()
+            ->with('fotografias')
+            ->ordenCronologicoMuro();
+
+        if ($request->filled('buscar')) {
+            $buscar = trim((string) $request->input('buscar'));
+            $query->where(function ($q) use ($buscar) {
+                $q->where('nombre', 'like', "%{$buscar}%")
+                    ->orWhere('titulo', 'like', "%{$buscar}%")
+                    ->orWhere('descripcion', 'like', "%{$buscar}%")
+                    ->orWhere('folio', 'like', "%{$buscar}%");
+            });
+        }
+
+        $publicaciones = $query->paginate(12)->withQueryString();
+
+        return view('muro', [
+            'publicaciones' => $publicaciones,
+            'errorConsulta' => false,
+        ]);
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::error('Error al consultar publicaciones del muro', [
+            'exception' => get_class($e),
+            'message' => $e->getMessage(),
+        ]);
+
+        return view('muro', [
+            'publicaciones' => collect(),
+            'errorConsulta' => true,
+            'mensajeError' => 'No pudimos cargar las publicaciones en este momento debido a un problema técnico o de conexión.',
+        ]);
     }
+};
 
-    $query = Publicacion::disponiblesMuro()
-        ->with('fotografias')
-        ->ordenCronologicoMuro();
-
-    if ($request->filled('buscar')) {
-        $buscar = trim((string) $request->input('buscar'));
-        $query->where(function ($q) use ($buscar) {
-            $q->where('nombre', 'like', "%{$buscar}%")
-                ->orWhere('titulo', 'like', "%{$buscar}%")
-                ->orWhere('descripcion', 'like', "%{$buscar}%")
-                ->orWhere('folio', 'like', "%{$buscar}%");
-        });
-    }
-
-    $publicaciones = $query->paginate(12)->withQueryString();
-
-    return view('muro', compact('publicaciones'));
-});
-
-Route::get('/muro', function (Request $request) {
-    if (! \Illuminate\Support\Facades\Schema::hasTable('publicaciones')) {
-        return view('muro', ['publicaciones' => collect()]);
-    }
-
-    $query = Publicacion::disponiblesMuro()
-        ->with('fotografias')
-        ->ordenCronologicoMuro();
-
-    if ($request->filled('buscar')) {
-        $buscar = trim((string) $request->input('buscar'));
-        $query->where(function ($q) use ($buscar) {
-            $q->where('nombre', 'like', "%{$buscar}%")
-                ->orWhere('titulo', 'like', "%{$buscar}%")
-                ->orWhere('descripcion', 'like', "%{$buscar}%")
-                ->orWhere('folio', 'like', "%{$buscar}%");
-        });
-    }
-
-    $publicaciones = $query->paginate(12)->withQueryString();
-
-    return view('muro', compact('publicaciones'));
-})->name('muro');
+Route::get('/', $muroHandler);
+Route::get('/muro', $muroHandler)->name('muro');
 
 // Detalle de publicación y destino previo (CA-08, CA-28, CA-29)
 Route::get('/publicaciones/{id}', function ($id) {

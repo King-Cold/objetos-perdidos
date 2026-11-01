@@ -673,6 +673,58 @@ class MuroTarjetasTask01Test extends TestCase
         $response->assertDontSee($fotoSecundaria->url);
         $response->assertDontSee(Publicacion::RESGUARDO_AUTOR);
     }
+
+    /**
+     * Test 17: Diferenciación de fallo de consulta respecto a la ausencia real de objetos,
+     * mostrando mensaje de error y botón accesible de «Reintentar».
+     */
+    public function test_fallo_de_consulta_diferenciado_de_muro_vacio_y_permite_reintentar(): void
+    {
+        // 1. Visitante ante un fallo de consulta
+        $viewFalloGuest = $this->view('muro', [
+            'publicaciones' => collect(),
+            'errorConsulta' => true,
+            'mensajeError' => 'Error de conexión con la base de datos institucional.',
+        ]);
+
+        $viewFalloGuest->assertSee('Error al cargar las publicaciones');
+        $viewFalloGuest->assertSee('Error de conexión con la base de datos institucional.');
+        $viewFalloGuest->assertSee('Reintentar');
+        $viewFalloGuest->assertDontSee('No hay objetos disponibles');
+
+        // 2. Usuario autenticado ante un fallo de consulta
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $viewFalloAuth = $this->view('muro', [
+            'publicaciones' => collect(),
+            'errorConsulta' => true,
+        ]);
+
+        $viewFalloAuth->assertSee('Error al cargar las publicaciones');
+        $viewFalloAuth->assertSee('Reintentar');
+        $viewFalloAuth->assertDontSee('No hay objetos disponibles');
+    }
+
+    /**
+     * Test 18: Ausencia real de objetos muestra «No hay objetos disponibles»
+     * y NO muestra «Error al cargar las publicaciones».
+     */
+    public function test_ausencia_real_de_objetos_muestra_muro_vacio_sin_error_de_consulta(): void
+    {
+        // Consulta normal sin publicaciones en la base de datos
+        $response = $this->get('/');
+        $response->assertOk();
+
+        // Muestra muro vacío
+        $response->assertSee('No hay objetos disponibles');
+        $response->assertSee('Actualmente no existen objetos pendientes de entrega o reportados en el campus.');
+        $response->assertSee('Encontré un objeto');
+
+        // No debe mostrar mensaje de error de carga
+        $response->assertDontSee('Error al cargar las publicaciones');
+        $response->assertDontSee('Reintentar');
+    }
 }
 
 

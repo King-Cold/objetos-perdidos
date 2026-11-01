@@ -64,7 +64,33 @@
                     </div>
                 </div>
 
-                @if (isset($publicaciones) && $publicaciones->count() > 0)
+                @if (!empty($errorConsulta))
+                    <div class="bg-white rounded-3xl p-8 sm:p-10 border border-red-200 shadow-xs text-center max-w-lg mx-auto my-6" role="alert">
+                        <div class="w-14 h-14 rounded-full bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-4 text-red-600">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <h4 class="text-base sm:text-lg font-black text-slate-900 mb-1.5">Error al cargar las publicaciones</h4>
+                        <p class="text-xs sm:text-sm text-slate-600 mb-6 leading-relaxed">
+                            {{ $mensajeError ?? 'Ocurrió un problema técnico o de conexión al consultar las publicaciones. Por favor, intenta de nuevo.' }}
+                        </p>
+                        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                            <a href="{{ request()->fullUrl() }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors shadow-xs">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                <span>Reintentar</span>
+                            </a>
+                            <a href="{{ route('reportes.create') }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                <span>Encontré un objeto</span>
+                            </a>
+                        </div>
+                    </div>
+                @elseif (isset($publicaciones) && $publicaciones->count() > 0)
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         @foreach ($publicaciones as $pub)
                             <x-muro-tarjeta :publicacion="$pub" />
@@ -194,7 +220,33 @@
                     </div>
                 </div>
 
-                @if (isset($publicaciones) && $publicaciones->count() > 0)
+                @if (!empty($errorConsulta))
+                    <div class="bg-white rounded-3xl p-8 sm:p-10 border border-red-200 shadow-xs text-center max-w-lg mx-auto my-6" role="alert">
+                        <div class="w-14 h-14 rounded-full bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-4 text-red-600">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-base sm:text-lg font-black text-slate-900 mb-1.5">Error al cargar las publicaciones</h3>
+                        <p class="text-xs sm:text-sm text-slate-600 mb-6 leading-relaxed">
+                            {{ $mensajeError ?? 'Ocurrió un problema técnico o de conexión al consultar las publicaciones. Por favor, intenta de nuevo.' }}
+                        </p>
+                        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                            <a href="{{ request()->fullUrl() }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors shadow-xs">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                <span>Reintentar</span>
+                            </a>
+                            <a href="{{ route('reportes.create') }}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                <span>Encontré un objeto</span>
+                            </a>
+                        </div>
+                    </div>
+                @elseif (isset($publicaciones) && $publicaciones->count() > 0)
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         @foreach ($publicaciones as $pub)
                             <x-muro-tarjeta :publicacion="$pub" />
