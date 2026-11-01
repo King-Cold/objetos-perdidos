@@ -70,6 +70,9 @@
                             <x-muro-tarjeta :publicacion="$pub" />
                         @endforeach
                     </div>
+
+                    {{-- Controles condicionales Anterior y Siguiente --}}
+                    <x-muro-paginacion :paginator="$publicaciones" />
                 @else
                     <div class="bg-white rounded-3xl p-10 border border-slate-200 text-center max-w-lg mx-auto">
                         <div class="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
@@ -177,6 +180,9 @@
                             <x-muro-tarjeta :publicacion="$pub" />
                         @endforeach
                     </div>
+
+                    {{-- Controles condicionales Anterior y Siguiente --}}
+                    <x-muro-paginacion :paginator="$publicaciones" />
                 @else
                     <div class="bg-white rounded-3xl p-10 border border-slate-200 text-center max-w-lg mx-auto">
                         <div class="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">

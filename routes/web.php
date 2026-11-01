@@ -29,7 +29,7 @@ Route::get('/', function (Request $request) {
         });
     }
 
-    $publicaciones = $query->get();
+    $publicaciones = $query->paginate(12)->withQueryString();
 
     return view('muro', compact('publicaciones'));
 });
@@ -53,7 +53,7 @@ Route::get('/muro', function (Request $request) {
         });
     }
 
-    $publicaciones = $query->get();
+    $publicaciones = $query->paginate(12)->withQueryString();
 
     return view('muro', compact('publicaciones'));
 })->name('muro');

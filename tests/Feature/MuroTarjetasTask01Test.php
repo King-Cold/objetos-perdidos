@@ -402,6 +402,136 @@ class MuroTarjetasTask01Test extends TestCase
         $response->assertDontSee('Reporte Incidencia Excluido');
         $response->assertDontSee('Objeto Biblioteca No Autorizado');
     }
+
+    /**
+     * Test 10: Cada página muestra un máximo de 12 tarjetas.
+     */
+    public function test_paginacion_maximo_doce_tarjetas_por_pagina(): void
+    {
+        $user = User::factory()->create();
+        $ahora = Carbon::now(Publicacion::TIMEZONE);
+
+        // Crear 15 publicaciones aprobadas y disponibles
+        for ($i = 1; $i <= 15; $i++) {
+            Publicacion::factory()->create([
+                'user_id' => $user->id,
+                'nombre' => "Objeto Paginado {$i}",
+                'folio' => sprintf('OBJ-20261101-%04d', $i),
+                'estado' => Publicacion::ESTADO_APROBADA,
+                'disponible' => true,
+                'fecha_primera_aprobacion' => $ahora->copy()->subMinutes(100 - $i),
+                'fecha_vencimiento' => $ahora->copy()->addDays(14),
+            ]);
+        }
+
+        // Página 1: debe contener un máximo de 12 publicaciones
+        $responsePage1 = $this->get('/');
+        $responsePage1->assertOk();
+        $pubsPage1 = $responsePage1->viewData('publicaciones');
+        $this->assertCount(12, $pubsPage1);
+
+        // Página 2: debe contener las 3 publicaciones restantes
+        $responsePage2 = $this->get('/?page=2');
+        $responsePage2->assertOk();
+        $pubsPage2 = $responsePage2->viewData('publicaciones');
+        $this->assertCount(3, $pubsPage2);
+    }
+
+    /**
+     * Test 11: Controles «Anterior» y «Siguiente» se ofrecen solo cuando existen páginas en esas direcciones.
+     */
+    public function test_controles_anterior_y_siguiente_condicionales_segun_direccion(): void
+    {
+        $user = User::factory()->create();
+        $ahora = Carbon::now(Publicacion::TIMEZONE);
+
+        // Caso A: Menos de 12 publicaciones -> NO se ofrecen controles
+        for ($i = 1; $i <= 5; $i++) {
+            Publicacion::factory()->create([
+                'user_id' => $user->id,
+                'nombre' => "Objeto Caso A {$i}",
+                'estado' => Publicacion::ESTADO_APROBADA,
+                'disponible' => true,
+                'fecha_primera_aprobacion' => $ahora->copy()->subMinutes($i),
+                'fecha_vencimiento' => $ahora->copy()->addDays(14),
+            ]);
+        }
+
+        $resUnicaPagina = $this->get('/');
+        $resUnicaPagina->assertOk();
+        $resUnicaPagina->assertDontSee('Anterior');
+        $resUnicaPagina->assertDontSee('Siguiente');
+
+        // Caso B: Agregar 10 más para totalizar 15 publicaciones (2 páginas)
+        for ($i = 6; $i <= 15; $i++) {
+            Publicacion::factory()->create([
+                'user_id' => $user->id,
+                'nombre' => "Objeto Caso B {$i}",
+                'estado' => Publicacion::ESTADO_APROBADA,
+                'disponible' => true,
+                'fecha_primera_aprobacion' => $ahora->copy()->subMinutes($i),
+                'fecha_vencimiento' => $ahora->copy()->addDays(14),
+            ]);
+        }
+
+        // En página 1: Solo existe página hacia adelante -> Solo control «Siguiente»
+        $resPage1 = $this->get('/');
+        $resPage1->assertOk();
+        $resPage1->assertSee('Siguiente');
+        $resPage1->assertDontSee('Anterior');
+
+        // En página 2 (última): Solo existe página previa -> Solo control «Anterior»
+        $resPage2 = $this->get('/?page=2');
+        $resPage2->assertOk();
+        $resPage2->assertSee('Anterior');
+        $resPage2->assertDontSee('Siguiente');
+    }
+
+    /**
+     * Test 12: En un listado sin cambios, avanzar y retroceder mantiene un orden estable
+     * sin duplicar publicaciones ni omitir registros entre páginas.
+     */
+    public function test_paginacion_orden_estable_sin_duplicidad_ni_omision(): void
+    {
+        $user = User::factory()->create();
+        $ahora = Carbon::now(Publicacion::TIMEZONE);
+        $totalCreadas = 20;
+
+        for ($i = 1; $i <= $totalCreadas; $i++) {
+            Publicacion::factory()->create([
+                'user_id' => $user->id,
+                'nombre' => "Item Estable {$i}",
+                'folio' => sprintf('OBJ-20261101-%04d', $i),
+                'estado' => Publicacion::ESTADO_APROBADA,
+                'disponible' => true,
+                'fecha_primera_aprobacion' => $ahora->copy()->subMinutes($totalCreadas - $i),
+                'fecha_vencimiento' => $ahora->copy()->addDays(14),
+            ]);
+        }
+
+        $resPage1 = $this->get('/');
+        $pubsPage1 = $resPage1->viewData('publicaciones');
+        $idsPage1 = $pubsPage1->pluck('id')->toArray();
+
+        $resPage2 = $this->get('/?page=2');
+        $pubsPage2 = $resPage2->viewData('publicaciones');
+        $idsPage2 = $pubsPage2->pluck('id')->toArray();
+
+        // 1. Las dos páginas no comparten ningún ID (sin duplicados)
+        $interseccion = array_intersect($idsPage1, $idsPage2);
+        $this->assertEmpty($interseccion, 'No debe haber publicaciones duplicadas entre páginas.');
+
+        // 2. La unión de ambas páginas contiene exactamente todas las 20 publicaciones (sin omisiones)
+        $todosLosIds = array_merge($idsPage1, $idsPage2);
+        $this->assertCount($totalCreadas, $todosLosIds);
+        $this->assertEquals($totalCreadas, count(array_unique($todosLosIds)));
+
+        // 3. Al volver a consultar página 1 (retroceder), los registros coinciden exactamente
+        $resPage1Reload = $this->get('/?page=1');
+        $idsPage1Reload = $resPage1Reload->viewData('publicaciones')->pluck('id')->toArray();
+        $this->assertSame($idsPage1, $idsPage1Reload);
+    }
 }
+
 
 
