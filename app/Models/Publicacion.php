@@ -184,6 +184,8 @@ class Publicacion extends Model
         return $this->isVencida()
             || (bool) $this->devolucion_en_proceso
             || (bool) $this->incidencia_abierta
+            || (bool) $this->tiene_incidencia
+            || in_array($this->estado_devolucion, ['Pendiente de verificación', 'Verificada', 'En incidencia', 'Devuelto'], true)
             || $this->isCancelado()
             || $this->estado === self::ESTADO_DEVUELTO;
     }
@@ -206,7 +208,31 @@ class Publicacion extends Model
                     ->orWhere('fecha_vencimiento', '>', $ahora);
             })
             ->where('devolucion_en_proceso', false)
-            ->where('incidencia_abierta', false);
+            ->where('incidencia_abierta', false)
+            ->where(function ($q) {
+                $q->whereNull('tiene_incidencia')
+                    ->orWhere('tiene_incidencia', false);
+            })
+            ->where(function ($q) {
+                $q->whereNull('estado_devolucion')
+                    ->orWhereNotIn('estado_devolucion', [
+                        'Pendiente de verificación',
+                        'Verificada',
+                        'En incidencia',
+                        'Devuelto',
+                    ]);
+            });
+    }
+
+    /**
+     * Orden cronológico institucional:
+     * Desde el inicio del periodo de publicación más reciente al más antiguo.
+     * En caso de empate en fecha y hora, desempate por folio en orden descendente.
+     */
+    public function scopeOrdenCronologicoMuro($query)
+    {
+        return $query->orderByRaw('COALESCE(fecha_primera_aprobacion, fecha_aprobacion, created_at) DESC')
+            ->orderByDesc('folio');
     }
 
     public function isExpirado(): bool

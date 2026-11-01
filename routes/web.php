@@ -15,7 +15,9 @@ Route::get('/', function (Request $request) {
         return view('muro', ['publicaciones' => collect()]);
     }
 
-    $query = Publicacion::disponiblesMuro();
+    $query = Publicacion::disponiblesMuro()
+        ->with('fotografias')
+        ->ordenCronologicoMuro();
 
     if ($request->filled('buscar')) {
         $buscar = trim((string) $request->input('buscar'));
@@ -27,7 +29,7 @@ Route::get('/', function (Request $request) {
         });
     }
 
-    $publicaciones = $query->latest()->get();
+    $publicaciones = $query->get();
 
     return view('muro', compact('publicaciones'));
 });
@@ -37,7 +39,9 @@ Route::get('/muro', function (Request $request) {
         return view('muro', ['publicaciones' => collect()]);
     }
 
-    $query = Publicacion::disponiblesMuro();
+    $query = Publicacion::disponiblesMuro()
+        ->with('fotografias')
+        ->ordenCronologicoMuro();
 
     if ($request->filled('buscar')) {
         $buscar = trim((string) $request->input('buscar'));
@@ -49,7 +53,7 @@ Route::get('/muro', function (Request $request) {
         });
     }
 
-    $publicaciones = $query->latest()->get();
+    $publicaciones = $query->get();
 
     return view('muro', compact('publicaciones'));
 })->name('muro');
@@ -69,6 +73,9 @@ Route::get('/publicaciones/{id}', function ($id) {
 
     return view('publicaciones.show', compact('publicacion'));
 })->name('publicaciones.show');
+
+// Acceso controlado y seguro a fotografías (público si la publicación está aprobada, privado para pendientes)
+Route::get('/fotografias/{fotografia}', [FotografiaController::class, 'show'])->name('fotografias.show');
 
 // Panel Administrativo protegido por rol (CA-08, CA-09, CA-12, CA-15)
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
@@ -113,9 +120,6 @@ Route::middleware('auth')->group(function () {
     // Detalle privado de reporte propio (HU-06 Tarea 06.1: CA-06, CA-07, CA-08)
     Route::get('/reportes/{id}', [ReporteController::class, 'show'])
         ->name('reportes.show');
-
-    // Acceso privado y controlado a fotografías de reportes (Tarea 05.5)
-    Route::get('/fotografias/{fotografia}', [FotografiaController::class, 'show'])->name('fotografias.show');
 
     // Edición con comprobación estricta de autoría y estado (HU-06 Tarea 06.2: CA-09 a CA-17, CA-22, CA-23)
     Route::get('/reportes/{id}/editar', [ReporteController::class, 'edit'])->name('reportes.edit');

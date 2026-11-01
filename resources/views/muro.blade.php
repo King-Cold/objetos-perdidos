@@ -65,27 +65,9 @@
                 </div>
 
                 @if (isset($publicaciones) && $publicaciones->count() > 0)
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         @foreach ($publicaciones as $pub)
-                            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between">
-                                <div>
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-900">
-                                            {{ $pub->categoria }}
-                                        </span>
-                                        <span class="text-[11px] text-slate-400">{{ $pub->created_at->format('d/m/Y') }}</span>
-                                    </div>
-                                    <h4 class="text-base font-bold text-slate-900 mb-1.5">{{ $pub->nombre ?? $pub->titulo }}</h4>
-                                    <p class="text-xs text-slate-600 line-clamp-3 mb-3">{{ $pub->descripcion }}</p>
-                                    <div class="text-[11px] text-slate-500 mb-4">
-                                        <strong>Lugar:</strong> {{ $pub->lugar_hallazgo ?? 'Campus Poniente' }}
-                                    </div>
-                                </div>
-                                <a href="{{ route('publicaciones.show', $pub->id) }}" class="inline-flex items-center justify-center gap-1.5 w-full px-4 py-2 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors">
-                                    <span>Ver más detalles</span>
-                                    <span aria-hidden="true">&rarr;</span>
-                                </a>
-                            </div>
+                            <x-muro-tarjeta :publicacion="$pub" />
                         @endforeach
                     </div>
                 @else
@@ -190,27 +172,9 @@
                 </div>
 
                 @if (isset($publicaciones) && $publicaciones->count() > 0)
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         @foreach ($publicaciones as $pub)
-                            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between">
-                                <div>
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-900">
-                                            {{ $pub->categoria }}
-                                        </span>
-                                        <span class="text-[11px] text-slate-400">{{ $pub->created_at->format('d/m/Y') }}</span>
-                                    </div>
-                                    <h3 class="text-base font-bold text-slate-900 mb-1.5">{{ $pub->nombre ?? $pub->titulo }}</h3>
-                                    <p class="text-xs text-slate-600 line-clamp-3 mb-3">{{ $pub->descripcion }}</p>
-                                    <div class="text-[11px] text-slate-500 mb-4">
-                                        <strong>Lugar:</strong> {{ $pub->lugar_hallazgo ?? 'Campus Poniente' }}
-                                    </div>
-                                </div>
-                                <a href="{{ route('publicaciones.show', $pub->id) }}" class="inline-flex items-center justify-center gap-1.5 w-full px-4 py-2 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors">
-                                    <span>Ver más detalles</span>
-                                    <span aria-hidden="true">&rarr;</span>
-                                </a>
-                            </div>
+                            <x-muro-tarjeta :publicacion="$pub" />
                         @endforeach
                     </div>
                 @else

@@ -6,19 +6,20 @@ use App\Models\Fotografia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class FotografiaController extends Controller
 {
     /**
      * Muestra o transmite de manera controlada y privada una fotografía asociada a un reporte.
      * 
-     * Reglas de acceso y privacidad (Tarea 05.5):
-     * - Las fotografías de reportes pendientes solo pueden ser visualizadas por el autor del hallazgo o personal administrativo.
-     * - Las fotografías no están expuestas públicamente.
-     * - Un usuario no puede ver fotografías de otros usuarios modificando identificadores en la URL.
+     * Reglas de acceso y privacidad (Tarea 05.5 y HU Muro Público):
+     * - Las fotografías de reportes aprobados y vigentes en el muro público están disponibles para consulta pública.
+     * - Las fotografías de reportes pendientes o restringidos solo pueden ser visualizadas por el autor o personal administrativo.
+     * - Visitantes no autenticados que intentan acceder a fotos pendientes son redirigidos al login.
+     * - Usuarios no autorizados reciben 403 Forbidden.
      */
-    public function show(Fotografia $fotografia): StreamedResponse
+    public function show(Fotografia $fotografia): Response
     {
         $publicacion = $fotografia->publicacion;
 
@@ -34,6 +35,9 @@ class FotografiaController extends Controller
             && $publicacion->estado === 'Aprobada';
 
         if (! $isAuthor && ! $isAdmin && ! $isPublicPublished) {
+            if (! $user) {
+                return redirect()->guest(route('login'));
+            }
             abort(403, 'No tienes permiso para ver esta fotografía.');
         }
 
@@ -52,7 +56,7 @@ class FotografiaController extends Controller
             $fotografia->nombre_original ?? basename($fotografia->ruta),
             [
                 'Content-Type' => $fotografia->mime_type ?: 'image/jpeg',
-                'Cache-Control' => 'private, no-cache, no-store, must-revalidate',
+                'Cache-Control' => $isPublicPublished ? 'public, max-age=86400' : 'private, no-cache, no-store, must-revalidate',
             ]
         );
     }
