@@ -7,7 +7,7 @@
 
 <article class="bg-white rounded-2xl border border-tecnm-gold/30 hover:border-tecnm-gold shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between overflow-hidden group">
     <div>
-        {{-- Fotografía principal --}}
+        {{-- Fotografía principal (únicamente imagen de vista previa, no galería completa) --}}
         <div class="relative w-full aspect-[4/3] bg-slate-100 overflow-hidden border-b border-slate-100">
             @if ($fotoPrincipal)
                 <img
@@ -33,7 +33,7 @@
             @endif
         </div>
 
-        {{-- Información exclusiva y pública: Nombre del objeto y descripción completa --}}
+        {{-- Información del objeto: Nombre del objeto y descripción completa --}}
         <div class="p-5">
             <h3 class="text-base sm:text-lg font-black text-slate-900 mb-2 leading-snug break-words">
                 {{ $nombreObjeto }}
@@ -41,10 +41,54 @@
             <p class="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line break-words">
                 {{ $publicacion->descripcion }}
             </p>
+
+            @auth
+                {{-- Información adicional ampliada exclusiva para usuarios autenticados (HU-09.2) --}}
+                <div class="mt-4 pt-3.5 border-t border-slate-100 space-y-2 text-xs">
+                    {{-- Disponibilidad actual --}}
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500 font-semibold text-[11px] uppercase tracking-wider">Disponibilidad:</span>
+                        @if ($publicacion->isDisponible())
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-bold border border-emerald-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                <span>Disponible</span>
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold border border-slate-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                <span>No disponible</span>
+                            </span>
+                        @endif
+                    </div>
+
+                    {{-- Fecha en que fue encontrado --}}
+                    @if ($publicacion->fecha_hallazgo)
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-500 font-medium">Encontrado:</span>
+                            <span class="text-slate-800 font-bold">
+                                {{ $publicacion->fecha_hallazgo instanceof \Carbon\Carbon ? $publicacion->fecha_hallazgo->format('d/m/Y') : \Carbon\Carbon::parse($publicacion->fecha_hallazgo)->format('d/m/Y') }}
+                                @if (!empty(trim((string)$publicacion->hora_hallazgo)))
+                                    <span class="font-normal text-slate-500 text-[11px]">({{ substr(trim($publicacion->hora_hallazgo), 0, 5) }} hrs)</span>
+                                @endif
+                            </span>
+                        </div>
+                    @endif
+
+                    {{-- Ubicación --}}
+                    @if ($publicacion->area_zona || $publicacion->lugar_hallazgo)
+                        <div class="flex items-start justify-between gap-2 text-xs">
+                            <span class="text-slate-500 font-medium shrink-0">Ubicación:</span>
+                            <span class="text-slate-800 font-bold text-right truncate">
+                                {{ $publicacion->area_zona ?? $publicacion->lugar_hallazgo }}
+                            </span>
+                        </div>
+                    @endif
+                </div>
+            @endauth
         </div>
     </div>
 
-    {{-- Botón de acción con color institucional rojo vino --}}
+    {{-- Botón de acción independiente para ver detalles --}}
     <div class="p-5 pt-0">
         <a
             href="{{ auth()->check() ? route('publicaciones.show', $publicacion->id) : route('publicaciones.detalles-privados', $publicacion->id) }}"

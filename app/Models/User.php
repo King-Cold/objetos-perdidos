@@ -78,4 +78,26 @@ class User extends Authenticatable
     {
         return $this->hasMany(DecisionModeracion::class);
     }
+
+    /**
+     * Valida si el teléfono del usuario tiene exactamente 10 dígitos numéricos (HU-09.3).
+     */
+    public function hasTelefonoValido(): bool
+    {
+        return $this->telefono_valido !== null;
+    }
+
+    /**
+     * Obtiene el número telefónico únicamente si tiene exactamente 10 dígitos (HU-09.3).
+     */
+    public function getTelefonoValidoAttribute(): ?string
+    {
+        if (empty($this->phone)) {
+            return null;
+        }
+
+        $digitos = preg_replace('/\D/', '', (string) $this->phone);
+
+        return strlen($digitos) === 10 ? $digitos : null;
+    }
 }

@@ -240,6 +240,23 @@ class Publicacion extends Model
         return $this->isVencida();
     }
 
+    /**
+     * Fecha de publicación correspondiente al inicio del periodo autorizado (HU-09.1).
+     * No corresponde necesariamente a la fecha de creación original del reporte.
+     */
+    public function getFechaPublicacionAttribute(): ?Carbon
+    {
+        $fecha = $this->fecha_primera_aprobacion
+            ?? $this->fecha_aprobacion
+            ?? $this->created_at;
+
+        if ($fecha === null) {
+            return null;
+        }
+
+        return $fecha instanceof Carbon ? $fecha : Carbon::parse($fecha);
+    }
+
     public function getVigenciaTextoAttribute(): string
     {
         if (! $this->fecha_primera_aprobacion) {
@@ -446,6 +463,34 @@ class Publicacion extends Model
 
         return str_contains($lugar, 'biblioteca')
             || str_contains($area, 'biblioteca');
+    }
+
+    /**
+     * Determina si la publicación cuenta con recepción física confirmada en biblioteca (HU-09.3).
+     * No se considera confirmada si la recepción está pendiente o en solicitud.
+     */
+    public function hasRecepcionFisicaConfirmada(): bool
+    {
+        if (! empty($this->situacion_resguardo)) {
+            $sit = mb_strtolower(trim($this->situacion_resguardo));
+            // Si la recepción o solicitud está pendiente, no es recepción física confirmada
+            if (str_contains($sit, 'pendiente') || str_contains($sit, 'solicitud')) {
+                return false;
+            }
+            if ($this->situacion_resguardo === self::RESGUARDO_CONFIRMADO || str_contains($sit, 'confirmado')) {
+                return true;
+            }
+        }
+
+        return $this->isBajoResguardoBiblioteca();
+    }
+
+    /**
+     * Obtiene el teléfono vigente y válido (10 dígitos) del autor del reporte (HU-09.3).
+     */
+    public function getTelefonoAutorValidoAttribute(): ?string
+    {
+        return $this->user?->telefono_valido;
     }
 
     public function scopePendientesRevision($query)

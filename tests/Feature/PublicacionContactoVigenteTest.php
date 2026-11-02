@@ -36,7 +36,7 @@ class PublicacionContactoVigenteTest extends TestCase
         $response->assertOk();
         $response->assertSee('9991234567');
         $response->assertSee('Teléfono: 9991234567');
-        $response->assertDontSee('Llamar');
+        $response->assertSee('Llamar');
     }
 
     /**
