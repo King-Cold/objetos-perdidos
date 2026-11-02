@@ -226,12 +226,15 @@ class Publicacion extends Model
 
     /**
      * Orden cronológico institucional:
-     * Desde el inicio del periodo de publicación más reciente al más antiguo.
-     * En caso de empate en fecha y hora, desempate por folio en orden descendente.
+     * Por fecha y hora de hallazgo (desde la más reciente a la más antigua).
+     * Si no hay hora registrada de hallazgo, esas aparecen primero para dicha fecha.
+     * En caso de empate, desempate por folio en orden descendente.
      */
     public function scopeOrdenCronologicoMuro($query)
     {
-        return $query->orderByRaw('COALESCE(fecha_primera_aprobacion, fecha_aprobacion, created_at) DESC')
+        return $query->orderByRaw('COALESCE(fecha_hallazgo, DATE(created_at)) DESC')
+            ->orderByRaw("CASE WHEN hora_hallazgo IS NULL OR TRIM(hora_hallazgo) = '' THEN 0 ELSE 1 END ASC")
+            ->orderByDesc('hora_hallazgo')
             ->orderByDesc('folio');
     }
 

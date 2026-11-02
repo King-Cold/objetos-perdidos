@@ -300,12 +300,14 @@ class MuroPaginacionTask104Test extends TestCase
         $pubAntigua = $this->crearPublicacionAprobada([
             'folio' => 'OBJ-20261102-0010',
             'nombre' => 'Objeto Primeramente Aprobado',
+            'fecha_hallazgo' => Carbon::now(Publicacion::TIMEZONE)->subDays(3)->toDateString(),
             'fecha_primera_aprobacion' => Carbon::now(Publicacion::TIMEZONE)->subDays(3),
         ]);
 
         $pubReciente = $this->crearPublicacionAprobada([
             'folio' => 'OBJ-20261102-0011',
             'nombre' => 'Objeto Recientemente Aprobado',
+            'fecha_hallazgo' => Carbon::now(Publicacion::TIMEZONE)->toDateString(),
             'fecha_primera_aprobacion' => Carbon::now(Publicacion::TIMEZONE)->subMinutes(5),
         ]);
 

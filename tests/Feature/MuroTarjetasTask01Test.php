@@ -236,63 +236,75 @@ class MuroTarjetasTask01Test extends TestCase
     }
 
     /**
-     * Test 8: Orden cronológico institucional desde el inicio de publicación más reciente al más antiguo,
-     * con desempate por folio descendente cuando coinciden fecha y hora.
+     * Test 8: Orden cronológico institucional por fecha y hora de hallazgo (más reciente primero).
+     * Si no hay hora registrada de hallazgo, esas aparecen primero para dicha fecha.
+     * En caso de empate, desempate por folio en orden descendente.
      */
-    public function test_orden_cronologico_por_inicio_de_publicacion_y_desempate_por_folio(): void
+    public function test_orden_cronologico_por_fecha_y_hora_de_hallazgo(): void
     {
         $user = User::factory()->create();
-        $baseTime = Carbon::create(2026, 11, 1, 10, 0, 0, Publicacion::TIMEZONE);
+        $hoy = Carbon::now(Publicacion::TIMEZONE)->format('Y-m-d');
+        $ayer = Carbon::now(Publicacion::TIMEZONE)->subDay()->format('Y-m-d');
 
-        // Publicación A: Publicada hace 2 horas (folio menor)
+        // Publicación A: Hallazgo hoy a las 10:00
         $pubA = Publicacion::factory()->create([
             'user_id' => $user->id,
-            'nombre' => 'Objeto Publicado Empate Folio 10',
+            'nombre' => 'Objeto Hallado Hoy a las 10:00',
             'folio' => 'OBJ-20261101-0010',
             'estado' => Publicacion::ESTADO_APROBADA,
             'disponible' => true,
-            'fecha_primera_aprobacion' => $baseTime->copy()->subHours(2),
-            'fecha_vencimiento' => $baseTime->copy()->addDays(14),
-            'fecha_hallazgo' => $baseTime->copy()->subDays(10)->format('Y-m-d'), // Hallazgo muy antiguo
+            'fecha_hallazgo' => $hoy,
+            'hora_hallazgo' => '10:00',
         ]);
 
-        // Publicación B: Misma fecha y hora que A, pero folio mayor
+        // Publicación B: Hallazgo hoy sin hora registrada (debe aparecer primero que las que tienen hora hoy)
         $pubB = Publicacion::factory()->create([
             'user_id' => $user->id,
-            'nombre' => 'Objeto Publicado Empate Folio 20',
+            'nombre' => 'Objeto Hallado Hoy Sin Hora',
             'folio' => 'OBJ-20261101-0020',
             'estado' => Publicacion::ESTADO_APROBADA,
             'disponible' => true,
-            'fecha_primera_aprobacion' => $baseTime->copy()->subHours(2),
-            'fecha_vencimiento' => $baseTime->copy()->addDays(14),
-            'fecha_hallazgo' => $baseTime->copy()->subDays(1)->format('Y-m-d'), // Hallazgo reciente
+            'fecha_hallazgo' => $hoy,
+            'hora_hallazgo' => null,
         ]);
 
-        // Publicación C: Publicada hace 1 hora (la más reciente en publicación)
+        // Publicación C: Hallazgo hoy a las 14:00 (más reciente que las 10:00)
         $pubC = Publicacion::factory()->create([
             'user_id' => $user->id,
-            'nombre' => 'Objeto Mas Reciente Publicado',
+            'nombre' => 'Objeto Hallado Hoy a las 14:00',
             'folio' => 'OBJ-20261101-0005',
             'estado' => Publicacion::ESTADO_APROBADA,
             'disponible' => true,
-            'fecha_primera_aprobacion' => $baseTime->copy()->subHours(1),
-            'fecha_vencimiento' => $baseTime->copy()->addDays(14),
-            'fecha_hallazgo' => $baseTime->copy()->subDays(5)->format('Y-m-d'),
+            'fecha_hallazgo' => $hoy,
+            'hora_hallazgo' => '14:00',
+        ]);
+
+        // Publicación D: Hallazgo ayer sin hora
+        $pubD = Publicacion::factory()->create([
+            'user_id' => $user->id,
+            'nombre' => 'Objeto Hallado Ayer Sin Hora',
+            'folio' => 'OBJ-20261101-0001',
+            'estado' => Publicacion::ESTADO_APROBADA,
+            'disponible' => true,
+            'fecha_hallazgo' => $ayer,
+            'hora_hallazgo' => null,
         ]);
 
         $response = $this->get('/');
         $response->assertOk();
 
         $publicaciones = $response->viewData('publicaciones');
-        $this->assertCount(3, $publicaciones);
+        $this->assertCount(4, $publicaciones);
 
-        // El orden debe ser:
-        // 1. PubC (publicada hace 1 hora, más reciente en inicio de publicación)
-        // 2. PubB (publicada hace 2 horas, empatada con A pero con folio 0020 > 0010)
-        // 3. PubA (publicada hace 2 horas, folio 0010)
-        $this->assertEquals($pubC->id, $publicaciones->values()->get(0)->id);
-        $this->assertEquals($pubB->id, $publicaciones->values()->get(1)->id);
+        // El orden esperado para hoy es:
+        // 1. PubB (hoy, sin hora registrada -> aparece primero)
+        // 2. PubC (hoy, 14:00)
+        // 3. PubA (hoy, 10:00)
+        // 4. PubD (ayer, sin hora)
+        $this->assertEquals($pubB->id, $publicaciones->values()->get(0)->id);
+        $this->assertEquals($pubC->id, $publicaciones->values()->get(1)->id);
         $this->assertEquals($pubA->id, $publicaciones->values()->get(2)->id);
+        $this->assertEquals($pubD->id, $publicaciones->values()->get(3)->id);
     }
 
     /**
