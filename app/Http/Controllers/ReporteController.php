@@ -122,9 +122,10 @@ class ReporteController extends Controller
             $publicacion->area_zona = $validated['area_zona'];
             $publicacion->ubicacion_especifica = $validated['ubicacion_especifica'];
 
-            // CA-24, CA-26: Al guardar, deja el reporte en 'Pendiente de aprobación' y lo retira del muro (disponible = false)
+            // CA-24, CA-26: Al guardar, deja el reporte en 'Pendiente de aprobación', actualiza la fecha de último envío a revisión y lo retira del muro (disponible = false)
             $publicacion->estado = Publicacion::ESTADO_PENDIENTE;
             $publicacion->disponible = false;
+            $publicacion->fecha_envio_revision = Carbon::now(Publicacion::TIMEZONE);
 
             $publicacion->save();
 

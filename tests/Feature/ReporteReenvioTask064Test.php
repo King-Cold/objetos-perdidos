@@ -74,6 +74,10 @@ class ReporteReenvioTask064Test extends TestCase
         // Campos actualizados y estado a 'Pendiente de aprobación'
         $this->assertEquals('Mochila Negra Marca Chenson', $reporte->nombre);
         $this->assertEquals(Publicacion::ESTADO_PENDIENTE, $reporte->estado);
+
+        // Se actualiza la fecha de último envío a revisión conservando intacta la fecha de captura original
+        $this->assertNotNull($reporte->fecha_envio_revision);
+        $this->assertNotEquals($originalCapture->toDateTimeString(), $reporte->fecha_envio_revision->toDateTimeString());
     }
 
     /**
