@@ -344,12 +344,7 @@
                                             </svg>
                                         </div>
                                         <div class="space-y-1 text-xs text-amber-900 leading-relaxed flex-1">
-                                            <div class="flex items-center gap-2 mb-0.5">
-                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-300">
-                                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                                    <span>Disponible en biblioteca</span>
-                                                </span>
-                                            </div>
+                                            <span class="sr-only">Disponible en biblioteca</span>
 
                                             <h3 class="text-xs sm:text-sm font-extrabold text-amber-950">
                                                 Objeto bajo resguardo confirmado de Biblioteca

@@ -1,23 +1,23 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 text-[#691C32] flex items-center justify-center shrink-0 shadow-2xs">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 text-[#691C32] flex items-center justify-center shrink-0 shadow-2xs">
+                    <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                 </div>
                 <div>
-                    <h2 class="font-black text-xl text-slate-900 leading-tight">
+                    <h2 class="font-black text-lg sm:text-xl text-slate-900 leading-tight">
                         Mis Reportes de Objetos
                     </h2>
-                    <p class="text-xs text-slate-500 font-medium">
+                    <p class="text-[11px] sm:text-xs text-slate-500 font-medium">
                         Historial de objetos perdidos o encontrados registrados por tu cuenta
                     </p>
                 </div>
             </div>
             <div>
-                <a href="{{ route('reportes.create') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#691C32] via-[#7D1636] to-[#691C32] hover:from-[#520B1D] hover:to-[#520B1D] text-white text-xs font-bold transition-all shadow-xs">
+                <a href="{{ route('reportes.create') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#691C32] via-[#7D1636] to-[#691C32] hover:from-[#520B1D] hover:to-[#520B1D] text-white text-xs font-bold transition-all shadow-xs">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
                     </svg>
@@ -27,7 +27,7 @@
         </div>
     </x-slot>
 
-    <div class="py-8 bg-slate-50/60 min-h-[calc(100vh-140px)]">
+    <div class="py-3.5 sm:py-4 bg-slate-50/60 min-h-[calc(100vh-120px)]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
             {{-- Confirmación visual SweetAlert2 al registrar nuevo reporte (Tarea 05.5) --}}
@@ -86,43 +86,43 @@
 
             @if (isset($reportes) && $reportes->count() > 0)
                 <!-- Distribución en cuadrícula con tarjetas compactas, borde guinda y fotografías mostradas abajito -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
                     @foreach ($reportes as $rep)
-                        <div class="bg-white rounded-3xl border border-slate-200/90 border-l-4 border-l-[#691C32] p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                        <div class="bg-white rounded-2xl border border-slate-200/90 border-l-4 border-l-[#691C32] p-3.5 sm:p-4 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
                             <div>
                                 <!-- Fila 1: Folio a la izquierda y Estado oficial en píldora a la derecha -->
-                                <div class="flex items-center justify-between pb-3.5 border-b border-slate-100 gap-2">
-                                    <span class="font-black text-sm text-slate-900 tracking-tight">
+                                <div class="flex items-center justify-between pb-2 border-b border-slate-100 gap-2">
+                                    <span class="font-black text-xs sm:text-sm text-slate-900 tracking-tight">
                                         {{ $rep->folio }}
                                     </span>
 
                                     @if ($rep->estado === 'Aprobada')
-                                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
                                             Aprobada
                                         </span>
                                     @elseif ($rep->estado === 'Pendiente de aprobación')
-                                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-[#FDF2E9] text-[#C05621] border border-orange-100">
+                                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FDF2E9] text-[#C05621] border border-orange-100">
                                             Pendiente de aprobación
                                         </span>
                                     @elseif ($rep->estado === 'Requiere corrección' || $rep->estado === 'Corrección solicitada')
-                                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200">
+                                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-800 border border-rose-200">
                                             {{ $rep->estado }}
                                         </span>
                                     @elseif ($rep->estado === 'Cancelado')
-                                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                                             Cancelado
                                         </span>
                                     @else
-                                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">
+                                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
                                             {{ $rep->estado }}
                                         </span>
                                     @endif
                                 </div>
 
                                 <!-- Fila 2: Foto destacada cuadrada y Título/Descripción -->
-                                <div class="py-3.5 border-b border-slate-100 flex items-start gap-3.5">
+                                <div class="py-2.5 border-b border-slate-100 flex items-start gap-3">
                                     <!-- Contenedor cuadrado de la imagen (proporcionado y estilizado) -->
-                                    <div class="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl bg-slate-50 border border-slate-100 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                                    <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-slate-50 border border-slate-100 p-0.5 flex items-center justify-center shrink-0 overflow-hidden">
                                         @php
                                             $fotoPrincipal = $rep->foto_principal ?? $rep->fotografias->first();
                                         @endphp
@@ -134,7 +134,7 @@
                                                 loading="lazy"
                                             />
                                         @else
-                                            <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                             </svg>
                                         @endif
@@ -145,17 +145,17 @@
                                         <h3 class="text-sm font-bold text-slate-900 leading-snug truncate">
                                             {{ $rep->nombre ?? $rep->titulo }}
                                         </h3>
-                                        <p class="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">
+                                        <p class="text-xs text-slate-500 line-clamp-1 mt-0.5 leading-relaxed">
                                             {{ $rep->descripcion }}
                                         </p>
-                                        <div class="mt-2">
+                                        <div class="mt-1">
                                             @if ($rep->isDisponible())
-                                                <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
+                                                <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold text-emerald-700">
                                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                                     <span>Disponible en el muro</span>
                                                 </span>
                                             @else
-                                                <span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
+                                                <span class="inline-flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
                                                     <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                                                     <span>Fuera del muro</span>
                                                 </span>
@@ -165,42 +165,42 @@
                                 </div>
 
                                 <!-- Fila 3: Información estructurada con iconos institucionales en tono vino -->
-                                <div class="py-3.5 space-y-2.5 text-xs border-b border-slate-100">
+                                <div class="py-2 space-y-1 text-xs border-b border-slate-100">
                                     <!-- Fecha y Hora del Hallazgo (Encontrado) -->
-                                    <div class="flex items-start gap-2.5">
-                                        <svg class="w-4 h-4 text-[#691C32] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="w-3.5 h-3.5 text-[#691C32] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
-                                        <div>
-                                            <span class="text-[11px] font-medium text-slate-400 block leading-tight">Encontrado</span>
-                                            <span class="font-bold text-slate-900 text-xs">
+                                        <div class="flex items-baseline gap-1.5 min-w-0">
+                                            <span class="text-[10px] font-medium text-slate-400 shrink-0">Encontrado:</span>
+                                            <span class="font-bold text-slate-900 text-xs truncate">
                                                 {{ $rep->fecha_hallazgo_texto }}
                                             </span>
                                         </div>
                                     </div>
 
                                     <!-- Fecha de Registro en Servidor -->
-                                    <div class="flex items-start gap-2.5">
-                                        <svg class="w-4 h-4 text-[#691C32] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="w-3.5 h-3.5 text-[#691C32] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
-                                        <div>
-                                            <span class="text-[11px] font-medium text-slate-400 block leading-tight">Fecha de registro</span>
-                                            <span class="font-bold text-slate-900 text-xs">
+                                        <div class="flex items-baseline gap-1.5 min-w-0">
+                                            <span class="text-[10px] font-medium text-slate-400 shrink-0">Fecha de registro:</span>
+                                            <span class="font-bold text-slate-900 text-xs truncate">
                                                 {{ $rep->fecha_registro_texto }}
                                             </span>
                                         </div>
                                     </div>
 
                                     <!-- Ubicación del Hallazgo -->
-                                    <div class="flex items-start gap-2.5">
-                                        <svg class="w-4 h-4 text-[#691C32] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="w-3.5 h-3.5 text-[#691C32] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
-                                        <div class="min-w-0">
-                                            <span class="text-[11px] font-medium text-slate-400 block leading-tight">Ubicación</span>
-                                            <span class="font-bold text-slate-900 text-xs block truncate">
+                                        <div class="flex items-baseline gap-1.5 min-w-0">
+                                            <span class="text-[10px] font-medium text-slate-400 shrink-0">Ubicación:</span>
+                                            <span class="font-bold text-slate-900 text-xs truncate" title="{{ $rep->area_zona }}@if ($rep->ubicacion_especifica) - {{ $rep->ubicacion_especifica }}@endif">
                                                 {{ $rep->area_zona }}@if ($rep->ubicacion_especifica) - {{ $rep->ubicacion_especifica }}@endif
                                             </span>
                                         </div>
@@ -208,7 +208,7 @@
                                 </div>
 
                                 <!-- Fila 4: Detalles de Resguardo, Vigencia y Contacto organizados ordenadamente -->
-                                <div class="py-2.5 space-y-1.5 text-xs">
+                                <div class="py-1.5 space-y-1 text-xs">
                                     <!-- Situación de resguardo -->
                                     <div class="flex items-center justify-between text-[11px]">
                                         <span class="text-slate-500 font-medium">Situación de resguardo:</span>
@@ -232,8 +232,8 @@
 
                                 <!-- Observaciones Administrativas de Biblioteca (CA-07, CA-08) -->
                                 @if ($rep->isEnCorreccion() && ($rep->motivo_correccion || $rep->observaciones_admin || $rep->observaciones))
-                                    <div class="mt-2 p-2.5 bg-amber-50 border border-amber-300 rounded-2xl text-[11px] text-amber-950 shadow-2xs">
-                                        <div class="font-bold flex items-center gap-1.5 text-amber-900 mb-0.5">
+                                    <div class="mt-1.5 p-2 bg-amber-50 border border-amber-300 rounded-xl text-[11px] text-amber-950 shadow-2xs">
+                                        <div class="font-bold flex items-center gap-1 text-amber-900 mb-0.5">
                                             <svg class="w-3.5 h-3.5 text-amber-700 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
                                             </svg>
@@ -246,7 +246,7 @@
                                 @endif
 
                                 @if ($rep->estado === 'Cancelado' && $rep->motivo_cancelacion)
-                                    <div class="mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-[11px] text-slate-600">
+                                    <div class="mt-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-600">
                                         <span class="font-bold text-slate-700 block text-[10px] uppercase tracking-wider mb-0.5">Motivo de cancelación:</span>
                                         <p class="leading-tight text-slate-600">{{ $rep->motivo_cancelacion }}</p>
                                     </div>
@@ -254,12 +254,12 @@
 
                                 <!-- Fotografías asociadas al reporte (mostradas abajito) -->
                                 @if ($rep->fotografias && $rep->fotografias->isNotEmpty())
-                                    <div class="pt-3 mt-1 border-t border-slate-100">
-                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                                    <div class="pt-2 mt-1 border-t border-slate-100">
+                                        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                                             Fotografías ({{ $rep->fotografias->count() }})
                                         </span>
-                                        <div class="flex items-center gap-2 overflow-x-auto">
-                                @foreach ($rep->fotografias as $foto)
+                                        <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                                            @foreach ($rep->fotografias as $foto)
                                                 <a
                                                     href="{{ route('fotografias.show', $foto->id) }}"
                                                     target="_blank"
@@ -270,12 +270,12 @@
                                                     <img
                                                         src="{{ $foto->url }}"
                                                         alt="{{ $foto->nombre_original ?? 'Foto del objeto' }}"
-                                                        class="w-14 h-14 rounded-lg object-cover border border-slate-200 bg-slate-50 group-hover:border-[#691C32] transition-all"
+                                                        class="w-10 h-10 rounded-lg object-cover border border-slate-200 bg-slate-50 group-hover:border-[#691C32] transition-all"
                                                         loading="lazy"
                                                     />
 
                                                     @if ($fotoPrincipal && $foto->id === $fotoPrincipal->id)
-                                                        <span class="absolute bottom-0.5 left-0.5 px-1 py-0.5 rounded text-[8px] font-bold bg-[#722F37] text-white leading-none shadow-xs">
+                                                        <span class="absolute bottom-0.5 left-0.5 px-1 py-0.5 rounded text-[7px] font-bold bg-[#722F37] text-white leading-none shadow-xs">
                                                             Principal
                                                         </span>
                                                     @endif
@@ -287,10 +287,10 @@
                             </div>
 
                             <!-- Fila 5: Pie de tarjeta con acciones permitidas (CA-03, CA-06, CA-09, CA-31, CA-38) -->
-                            <div class="pt-3.5 border-t border-slate-100 mt-2 space-y-2">
+                            <div class="pt-2.5 border-t border-slate-100 mt-1.5 space-y-1.5">
                                 <div class="grid {{ $rep->puedeEditarse() ? 'grid-cols-2' : 'grid-cols-1' }} gap-2">
                                     <!-- Botón Ver detalle (CA-06: abre detalle privado) -->
-                                    <a href="{{ route('reportes.show', $rep->id) }}" class="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs">
+                                    <a href="{{ route('reportes.show', $rep->id) }}" class="inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs">
                                         <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -300,7 +300,7 @@
 
                                     <!-- Botón Editar reporte (CA-09) -->
                                     @if ($rep->puedeEditarse())
-                                        <a href="{{ route('reportes.edit', $rep->id) }}" class="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-2xl border border-slate-200 hover:border-[#691C32] hover:bg-rose-50/40 text-slate-700 hover:text-[#691C32] text-xs font-bold transition-all shadow-2xs">
+                                        <a href="{{ route('reportes.edit', $rep->id) }}" class="inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-2.5 rounded-xl border border-slate-200 hover:border-[#691C32] hover:bg-rose-50/40 text-slate-700 hover:text-[#691C32] text-xs font-bold transition-all shadow-2xs">
                                             <span>Editar reporte</span>
                                             <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -311,7 +311,7 @@
 
                                 <!-- Botón Cancelar reporte (CA-31) -->
                                 @if ($rep->puedeCancelarse())
-                                    <a href="{{ route('reportes.cancelar', $rep->id) }}" class="inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-3 rounded-xl border border-transparent hover:border-rose-200 hover:bg-rose-50/60 text-slate-500 hover:text-rose-700 text-xs font-semibold transition-all">
+                                    <a href="{{ route('reportes.cancelar', $rep->id) }}" class="inline-flex items-center justify-center gap-1.5 w-full py-1 px-2.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50/60 text-slate-500 hover:text-rose-700 text-xs font-semibold transition-all">
                                         <svg class="w-3.5 h-3.5 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                                         </svg>

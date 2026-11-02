@@ -50,7 +50,7 @@ class AuthenticatedSessionController extends Controller
             // Determinar si existe un retorno previo autorizado (CA-08, CA-28, CA-29, CA-30)
             $targetUrl = $this->resolveSafeReturnDestination($request, $user, $defaultRoute);
 
-            return redirect()->to($targetUrl);
+            return redirect()->to($targetUrl)->with('status_login', '¡Bienvenido(a)!');
 
         } catch (ValidationException $e) {
             throw $e;

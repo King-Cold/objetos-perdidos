@@ -25,12 +25,7 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <!-- Mensajes Flash de Sesión (CA-26, CA-29, CA-31) -->
                 @if (session('status'))
-                    <div class="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-sm font-semibold text-emerald-800 flex items-center gap-3 shadow-xs">
-                        <svg class="w-5 h-5 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                        </svg>
-                        <span>{{ session('status') }}</span>
-                    </div>
+                    <div class="sr-only" aria-live="polite">{{ session('status') }}</div>
                 @endif
 
                 @if (session('warning'))
@@ -184,16 +179,10 @@
                     </div>
 
                     <div class="flex items-center gap-2 sm:gap-3">
-                        <a href="{{ route('reportes.create') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-tecnm-wine hover:bg-tecnm-wine-hover text-white font-bold text-xs transition-colors shadow-xs">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                            </svg>
-                            <span>Encontré un objeto</span>
-                        </a>
-                        <a href="{{ route('login') }}" class="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors">
+                        <a href="{{ route('login') }}" class="px-3.5 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-slate-400 hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200 text-slate-700 font-bold text-xs transition-colors shadow-2xs">
                             Iniciar sesión
                         </a>
-                        <a href="{{ route('register') }}" class="hidden sm:inline-block px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors">
+                        <a href="{{ route('register') }}" class="hidden sm:inline-block px-3.5 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-slate-400 hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200 text-slate-700 font-bold text-xs transition-colors shadow-2xs">
                             Crear cuenta
                         </a>
                     </div>
@@ -204,12 +193,7 @@
             <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
                 <!-- Mensajes Flash de Sesión (CA-26, CA-29, CA-31) -->
                 @if (session('status'))
-                    <div class="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-sm font-semibold text-emerald-800 flex items-center gap-3 shadow-xs">
-                        <svg class="w-5 h-5 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                        </svg>
-                        <span>{{ session('status') }}</span>
-                    </div>
+                    <div class="sr-only" aria-live="polite">{{ session('status') }}</div>
                 @endif
 
                 @if (session('warning'))
@@ -242,7 +226,7 @@
                         <p class="text-xs text-slate-500 mt-0.5">Objetos resguardados en Biblioteca o reportados en el campus.</p>
                     </div>
                     <div>
-                        <a href="{{ route('reportes.create') }}" class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors shadow-xs">
+                        <a href="{{ route('reportes.create') }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors shadow-xs">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                             </svg>
@@ -335,6 +319,68 @@
                     </div>
                 @endif
             </main>
+
+            @if (session('status'))
+                <script>
+                    (function() {
+                        function showStatusAlert() {
+                            var statusMsg = @js(session('status'));
+                            var isLogout = statusMsg.toLowerCase().includes('cerrada') || statusMsg.toLowerCase().includes('sesión');
+                            var title = isLogout ? 'Sesión finalizada' : 'Información';
+                            var subtitle = isLogout 
+                                ? statusMsg + '. Esperamos verte pronto en el Campus Poniente.' 
+                                : statusMsg;
+
+                            if (typeof window.Swal !== 'undefined') {
+                                window.Swal.fire({
+                                    html: `
+                                        <div class="relative pt-1 pb-1 px-1 text-center">
+                                            <!-- Franja decorativa superior degradada vino a dorado -->
+                                            <div class="absolute -top-6 -inset-x-6 h-1.5 bg-gradient-to-r from-[#691C32] via-[#941A3E] to-[#C59B3F]"></div>
+
+                                            <!-- Icono circular con aro dorado y palomita en rojo vino -->
+                                            <div class="mx-auto w-16 h-16 rounded-full border-[2.5px] border-[#C59B3F] bg-gradient-to-b from-amber-50 to-orange-50/40 flex items-center justify-center mb-3.5 shadow-md ring-4 ring-amber-100/70">
+                                                <svg class="w-8 h-8 text-[#691C32]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                                </svg>
+                                            </div>
+
+                                            <!-- Título institucional -->
+                                            <h3 class="text-xl font-black text-slate-800 tracking-tight">
+                                                ${title}
+                                            </h3>
+
+                                            <!-- Mensaje informativo -->
+                                            <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed max-w-[270px] mx-auto">
+                                                ${subtitle}
+                                            </p>
+                                        </div>
+                                    `,
+                                    showConfirmButton: true,
+                                    confirmButtonText: 'Aceptar',
+                                    timer: 3500,
+                                    timerProgressBar: true,
+                                    buttonsStyling: false,
+                                    background: '#FCFBF9',
+                                    backdrop: 'rgba(26, 4, 10, 0.5)',
+                                    customClass: {
+                                        popup: 'rounded-3xl shadow-2xl border-2 border-amber-400/60 ring-1 ring-black/5 p-6 max-w-sm mx-auto overflow-hidden',
+                                        confirmButton: 'inline-flex items-center justify-center px-8 py-2.5 rounded-full font-bold text-xs tracking-wide text-white bg-gradient-to-r from-[#691C32] via-[#7D1636] to-[#691C32] hover:from-[#520B1D] hover:to-[#520B1D] active:bg-[#3B0715] border border-amber-300/40 shadow-md hover:shadow-lg transition-all duration-150 cursor-pointer mt-3 focus:outline-none focus:ring-2 focus:ring-[#691C32] focus:ring-offset-2'
+                                    }
+                                });
+                            } else {
+                                setTimeout(showStatusAlert, 50);
+                            }
+                        }
+
+                        if (document.readyState === 'loading') {
+                            document.addEventListener('DOMContentLoaded', showStatusAlert);
+                        } else {
+                            showStatusAlert();
+                        }
+                    })();
+                </script>
+            @endif
         </body>
     </html>
 @endauth
