@@ -392,6 +392,7 @@ class MuroBusquedaTextoTask102Test extends TestCase
             'folio' => 'OBJ-20261102-0024',
             'nombre' => 'Mochila Puma Antigua',
             'descripcion' => 'Mochila gris publicada hace 2 días',
+            'fecha_hallazgo' => Carbon::now(Publicacion::TIMEZONE)->subDays(2)->toDateString(),
             'fecha_primera_aprobacion' => Carbon::now(Publicacion::TIMEZONE)->subDays(2),
         ]);
 
@@ -399,6 +400,7 @@ class MuroBusquedaTextoTask102Test extends TestCase
             'folio' => 'OBJ-20261102-0025',
             'nombre' => 'Mochila Puma Reciente',
             'descripcion' => 'Mochila gris publicada hoy',
+            'fecha_hallazgo' => Carbon::now(Publicacion::TIMEZONE)->toDateString(),
             'fecha_primera_aprobacion' => Carbon::now(Publicacion::TIMEZONE),
         ]);
 
