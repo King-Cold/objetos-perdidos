@@ -235,6 +235,64 @@ class Publicacion extends Model
             ->orderByDesc('folio');
     }
 
+    /**
+     * Scope para filtrar publicaciones por coincidencia de texto en nombre y descripción (HU-10 / Tarea 10.2).
+     *
+     * - Consulta exclusivamente el nombre del objeto y su descripción completa.
+     * - Normaliza el texto: elimina espacios externos y trata secuencias de espacios como separadores.
+     * - Aplica condición AND entre términos (todos los términos deben coincidir).
+     * - Cada término puede coincidir en el nombre O en la descripción (o distribuirse entre ambos).
+     * - Ignora mayúsculas, minúsculas y acentos.
+     * - Admite coincidencias parciales de palabras.
+     * - Escapa caracteres especiales de LIKE (%, _, \) para evitar inyecciones y tratarlos como texto literal.
+     * - Si el texto está vacío o compuesto únicamente por espacios, no aplica ningún filtro.
+     */
+    public function scopeBuscarTexto($query, ?string $texto)
+    {
+        $raw = trim((string) $texto);
+        if ($raw === '') {
+            return $query;
+        }
+
+        $terminos = preg_split('/\s+/', $raw, -1, PREG_SPLIT_NO_EMPTY);
+        if (empty($terminos)) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($terminos) {
+            foreach ($terminos as $termino) {
+                $escaped = str_replace(
+                    ['\\', '%', '_'],
+                    ['\\\\', '\\%', '\\_'],
+                    $termino
+                );
+                $param = "%{$escaped}%";
+
+                $q->where(function ($sub) use ($param) {
+                    $sub->where('nombre', 'like', $param)
+                        ->orWhere('titulo', 'like', $param)
+                        ->orWhere('descripcion', 'like', $param);
+                });
+            }
+        });
+    }
+
+    /**
+     * Scope para filtrar publicaciones por la fecha exacta del hallazgo (HU-10 / Tarea 10.3).
+     *
+     * - Compara exclusivamente contra el campo 'fecha_hallazgo'.
+     * - No utiliza fecha de captura, aprobación, actualización ni reenvío a revisión.
+     * - Compara la fecha institucional sin exigir horas específicas.
+     */
+    public function scopeFiltrarFechaHallazgo($query, ?string $fecha)
+    {
+        if (empty($fecha)) {
+            return $query;
+        }
+
+        return $query->whereDate('fecha_hallazgo', '=', $fecha);
+    }
+
     public function isExpirado(): bool
     {
         return $this->isVencida();

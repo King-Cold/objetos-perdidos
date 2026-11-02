@@ -29,7 +29,10 @@
                     </h1>
 
                     <p class="text-xs text-slate-500 mb-6">
-                        Publicado el {{ $publicacion->created_at->format('d/m/Y H:i') }} &bull; Lugar de resguardo: <strong>{{ $publicacion->lugar_hallazgo ?? 'Biblioteca Campus Poniente' }}</strong>
+                        @if ($publicacion->fecha_hallazgo)
+                            Encontrado el <strong>{{ \Carbon\Carbon::parse($publicacion->fecha_hallazgo)->format('d/m/Y') }}</strong>{{ $publicacion->hora_hallazgo ? ' a las ' . substr($publicacion->hora_hallazgo, 0, 5) . ' hrs' : '' }} &bull;
+                        @endif
+                        Lugar de resguardo: <strong>{{ $publicacion->lugar_hallazgo ?? 'Biblioteca Campus Poniente' }}</strong>
                     </p>
 
                     <div class="prose prose-slate text-sm text-slate-700 leading-relaxed mb-8">
@@ -107,7 +110,7 @@
                     @endif
 
                     <div class="pt-6 border-t border-slate-100 flex items-center justify-between">
-                        <a href="{{ route('muro') }}" class="px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors">
+                        <a href="{{ $urlVolver ?? route('muro') }}" class="px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors">
                             Volver al Muro
                         </a>
                     </div>
@@ -142,7 +145,7 @@
                             Detalle de Publicación
                         </span>
                     </div>
-                    <a href="{{ route('muro') }}" class="px-3.5 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors">
+                    <a href="{{ $urlVolver ?? route('muro') }}" class="px-3.5 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors">
                         Volver al Muro
                     </a>
                 </div>
@@ -212,7 +215,7 @@
 
                     {{-- Acciones y retorno --}}
                     <div class="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                        <a href="{{ route('muro') }}" class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold text-center transition-colors">
+                        <a href="{{ $urlVolver ?? route('muro') }}" class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold text-center transition-colors">
                             Volver al Muro
                         </a>
                         <a href="{{ route('login') }}" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold text-center transition-colors shadow-xs">
