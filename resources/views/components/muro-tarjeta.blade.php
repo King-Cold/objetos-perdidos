@@ -33,7 +33,7 @@
             @endif
         </div>
 
-        {{-- Información del objeto: Nombre del objeto y descripción completa --}}
+        {{-- Información pública: Nombre del objeto y descripción completa --}}
         <div class="p-5">
             <h3 class="text-base sm:text-lg font-black text-slate-900 mb-2 leading-snug break-words">
                 {{ $nombreObjeto }}
@@ -88,10 +88,17 @@
         </div>
     </div>
 
+    @php
+        $paramsRetorno = array_filter(
+            request()->only(['buscar', 'fecha_hallazgo', 'page']),
+            fn($v) => !is_null($v) && $v !== ''
+        );
+    @endphp
+
     {{-- Botón de acción independiente para ver detalles --}}
     <div class="p-5 pt-0">
         <a
-            href="{{ auth()->check() ? route('publicaciones.show', $publicacion->id) : route('publicaciones.detalles-privados', $publicacion->id) }}"
+            href="{{ auth()->check() ? route('publicaciones.show', array_merge(['id' => $publicacion->id], $paramsRetorno)) : route('publicaciones.detalles-privados', array_merge(['id' => $publicacion->id], $paramsRetorno)) }}"
             class="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors shadow-xs focus:outline-none focus:ring-2 focus:ring-tecnm-gold focus:ring-offset-2"
         >
             <span>Ver más detalles</span>

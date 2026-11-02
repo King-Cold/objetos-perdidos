@@ -5,6 +5,7 @@ use App\Http\Controllers\FotografiaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReporteController;
 use App\Models\Publicacion;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -16,28 +17,64 @@ $muroHandler = function (Request $request) {
             return view('muro', [
                 'publicaciones' => collect(),
                 'errorConsulta' => false,
+                'errorFecha' => null,
             ]);
+        }
+
+        $errorFecha = null;
+        $fechaValida = null;
+
+        if ($request->filled('fecha_hallazgo')) {
+            $rawFecha = trim((string) $request->input('fecha_hallazgo'));
+            $hoyMerida = Carbon::now(Publicacion::TIMEZONE)->startOfDay();
+
+            $parsed = null;
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawFecha)) {
+                [$y, $m, $d] = explode('-', $rawFecha);
+                if (checkdate((int) $m, (int) $d, (int) $y)) {
+                    $parsed = Carbon::createFromFormat('Y-m-d', $rawFecha, Publicacion::TIMEZONE)->startOfDay();
+                }
+            }
+
+            if (! $parsed || $parsed->greaterThan($hoyMerida)) {
+                $errorFecha = 'Selecciona una fecha válida que no sea posterior a hoy';
+            } else {
+                $fechaValida = $parsed->toDateString();
+            }
         }
 
         $query = Publicacion::disponiblesMuro()
             ->with('fotografias')
             ->ordenCronologicoMuro();
 
-        if ($request->filled('buscar')) {
-            $buscar = trim((string) $request->input('buscar'));
-            $query->where(function ($q) use ($buscar) {
-                $q->where('nombre', 'like', "%{$buscar}%")
-                    ->orWhere('titulo', 'like', "%{$buscar}%")
-                    ->orWhere('descripcion', 'like', "%{$buscar}%")
-                    ->orWhere('folio', 'like', "%{$buscar}%");
-            });
+        // 1. Filtro de texto (HU-10 / Tarea 10.2)
+        if ($request->has('buscar')) {
+            $query->buscarTexto($request->input('buscar'));
+        }
+
+        // 2. Filtro de fecha de hallazgo (HU-10 / Tarea 10.3)
+        if ($fechaValida !== null) {
+            $query->filtrarFechaHallazgo($fechaValida);
         }
 
         $publicaciones = $query->paginate(12)->withQueryString();
 
+        // Guardar contexto de retorno en sesión si hay filtros o página activa (HU-10 / Tarea 10.4)
+        if ($request->hasAny(['buscar', 'fecha_hallazgo', 'page'])) {
+            $request->session()->put('muro_return_url', $request->fullUrl());
+        } else {
+            $request->session()->forget('muro_return_url');
+        }
+
+        // Determinar si el usuario ejecutó una búsqueda activa (HU-10 / Tarea 10.5)
+        $esBusqueda = (trim((string) $request->input('buscar', '')) !== '')
+            || ($request->filled('fecha_hallazgo') && $fechaValida !== null);
+
         return view('muro', [
             'publicaciones' => $publicaciones,
             'errorConsulta' => false,
+            'errorFecha' => $errorFecha,
+            'esBusqueda' => $esBusqueda,
         ]);
     } catch (\Throwable $e) {
         \Illuminate\Support\Facades\Log::error('Error al consultar publicaciones del muro', [
@@ -45,19 +82,79 @@ $muroHandler = function (Request $request) {
             'message' => $e->getMessage(),
         ]);
 
+        $esBusqueda = (trim((string) $request->input('buscar', '')) !== '')
+            || $request->filled('fecha_hallazgo');
+
+        $mensajeError = $esBusqueda
+            ? 'No fue posible realizar la búsqueda. Intenta nuevamente'
+            : 'No pudimos cargar las publicaciones en este momento debido a un problema técnico o de conexión.';
+
         return view('muro', [
             'publicaciones' => collect(),
             'errorConsulta' => true,
-            'mensajeError' => 'No pudimos cargar las publicaciones en este momento debido a un problema técnico o de conexión.',
+            'mensajeError' => $mensajeError,
+            'errorFecha' => null,
+            'esBusqueda' => $esBusqueda,
         ]);
     }
+};
+
+// Función de sanitización y retorno seguro al muro (HU-10 / Tarea 10.4)
+$sanitizarRetornoMuro = function (Request $request): string {
+    // 1. Parámetro explícito de retorno (retorno, return_to, return_url, ref, volver)
+    $candidato = $request->query('retorno')
+        ?? $request->query('return_to')
+        ?? $request->query('return_url')
+        ?? $request->query('ref')
+        ?? $request->query('volver');
+
+    if ($candidato !== null && $candidato !== '') {
+        $candidato = trim((string) $candidato);
+
+        // Bloquear esquemas maliciosos, protocolo relativo // y javascript:
+        if (! str_starts_with($candidato, '//') && ! preg_match('/^javascript:/i', $candidato)) {
+            $parsed = parse_url($candidato);
+            // Si incluye host, debe coincidir estrictamente con el host institucional local
+            if (! isset($parsed['host']) || $parsed['host'] === $request->getHost()) {
+                $path = $parsed['path'] ?? '/';
+                if ($path === '/' || $path === '/muro' || str_ends_with($path, '/muro')) {
+                    $query = isset($parsed['query']) ? '?' . $parsed['query'] : '';
+                    return url($path) . $query;
+                }
+            }
+        }
+    }
+
+    // 2. Parámetros directos de filtro en la petición actual
+    $paramsFiltro = array_filter(
+        $request->only(['buscar', 'fecha_hallazgo', 'page']),
+        fn($val) => ! is_null($val) && $val !== ''
+    );
+
+    if (! empty($paramsFiltro)) {
+        return route('muro', $paramsFiltro);
+    }
+
+    // 3. Contexto registrado en sesión durante la navegación en el muro
+    if ($request->session()->has('muro_return_url')) {
+        $sesionUrl = (string) $request->session()->get('muro_return_url');
+        $parsed = parse_url($sesionUrl);
+        if (! isset($parsed['host']) || $parsed['host'] === $request->getHost()) {
+            $path = $parsed['path'] ?? '/';
+            if ($path === '/' || $path === '/muro' || str_ends_with($path, '/muro')) {
+                return $sesionUrl;
+            }
+        }
+    }
+
+    return route('muro');
 };
 
 Route::get('/', $muroHandler);
 Route::get('/muro', $muroHandler)->name('muro');
 
-// Detalle de publicación y destino previo (CA-08, CA-28, CA-29)
-Route::get('/publicaciones/{id}', function ($id) {
+// Detalle de publicación y destino previo (CA-08, CA-28, CA-29, HU-10 / Tarea 10.4)
+Route::get('/publicaciones/{id}', function (Request $request, $id) use ($sanitizarRetornoMuro) {
     $publicacion = Publicacion::with(['user', 'fotografias'])->find($id);
 
     if (! $publicacion || ! $publicacion->isDisponible()) {
@@ -69,11 +166,13 @@ Route::get('/publicaciones/{id}', function ($id) {
         session()->put('intended_publication_id', $publicacion->id);
     }
 
-    return view('publicaciones.show', compact('publicacion'));
+    $urlVolver = $sanitizarRetornoMuro($request);
+
+    return view('publicaciones.show', compact('publicacion', 'urlVolver'));
 })->name('publicaciones.show');
 
-// Solicitud de autenticación para apartados privados desde el muro público (HU Muro / HU-02)
-Route::get('/publicaciones/{id}/detalles-privados', function ($id) {
+// Solicitud de autenticación para apartados privados desde el muro público (HU Muro / HU-02, HU-10 / Tarea 10.4)
+Route::get('/publicaciones/{id}/detalles-privados', function (Request $request, $id) use ($sanitizarRetornoMuro) {
     $publicacion = Publicacion::find($id);
 
     if (! $publicacion || ! $publicacion->isDisponible()) {
@@ -82,11 +181,16 @@ Route::get('/publicaciones/{id}/detalles-privados', function ($id) {
 
     session()->put('intended_publication_id', $publicacion->id);
 
+    $urlVolver = $sanitizarRetornoMuro($request);
+    if ($urlVolver !== route('muro')) {
+        session()->put('muro_return_url', $urlVolver);
+    }
+
     if (! Auth::check()) {
         return redirect()->guest(route('login'));
     }
 
-    return redirect()->route('publicaciones.show', $publicacion->id);
+    return redirect()->to(route('publicaciones.show', array_merge(['id' => $publicacion->id], $request->query())));
 })->name('publicaciones.detalles-privados');
 
 // Acceso controlado y seguro a fotografías (público si la publicación está aprobada, privado para pendientes)
