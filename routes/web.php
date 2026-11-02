@@ -99,7 +99,7 @@ $muroHandler = function (Request $request) {
     }
 };
 
-// Función de sanitización y retorno seguro al muro (HU-10 / Tarea 10.4)
+// Función de sanitización y retorno seguro al muro (HU-10 / Tarea 10.4, HU-09 / Tarea 09.4)
 $sanitizarRetornoMuro = function (Request $request): string {
     // 1. Parámetro explícito de retorno (retorno, return_to, return_url, ref, volver)
     $candidato = $request->query('retorno')
@@ -111,13 +111,18 @@ $sanitizarRetornoMuro = function (Request $request): string {
     if ($candidato !== null && $candidato !== '') {
         $candidato = trim((string) $candidato);
 
-        // Bloquear esquemas maliciosos, protocolo relativo // y javascript:
-        if (! str_starts_with($candidato, '//') && ! preg_match('/^javascript:/i', $candidato)) {
+        // Bloquear esquemas maliciosos, protocolo relativo //, barra inversa \ y javascript/data/vbscript:
+        if (! str_starts_with($candidato, '//') 
+            && ! str_starts_with($candidato, '\\') 
+            && ! str_starts_with($candidato, '/\\')
+            && ! preg_match('/^(javascript|data|vbscript):/i', $candidato)) {
+            
             $parsed = parse_url($candidato);
             // Si incluye host, debe coincidir estrictamente con el host institucional local
             if (! isset($parsed['host']) || $parsed['host'] === $request->getHost()) {
-                $path = $parsed['path'] ?? '/';
-                if ($path === '/' || $path === '/muro' || str_ends_with($path, '/muro')) {
+                $path = rtrim($parsed['path'] ?? '/', '/');
+                $path = ($path === '') ? '/' : $path;
+                if ($path === '/' || $path === '/muro') {
                     $query = isset($parsed['query']) ? '?' . $parsed['query'] : '';
                     return url($path) . $query;
                 }
@@ -140,8 +145,9 @@ $sanitizarRetornoMuro = function (Request $request): string {
         $sesionUrl = (string) $request->session()->get('muro_return_url');
         $parsed = parse_url($sesionUrl);
         if (! isset($parsed['host']) || $parsed['host'] === $request->getHost()) {
-            $path = $parsed['path'] ?? '/';
-            if ($path === '/' || $path === '/muro' || str_ends_with($path, '/muro')) {
+            $path = rtrim($parsed['path'] ?? '/', '/');
+            $path = ($path === '') ? '/' : $path;
+            if ($path === '/' || $path === '/muro') {
                 return $sesionUrl;
             }
         }
@@ -153,12 +159,13 @@ $sanitizarRetornoMuro = function (Request $request): string {
 Route::get('/', $muroHandler);
 Route::get('/muro', $muroHandler)->name('muro');
 
-// Detalle de publicación y destino previo (CA-08, CA-28, CA-29, HU-10 / Tarea 10.4)
+// Detalle de publicación y destino previo (CA-08, CA-28, CA-29, HU-10 / Tarea 10.4, HU-09 / Tarea 09.4)
 Route::get('/publicaciones/{id}', function (Request $request, $id) use ($sanitizarRetornoMuro) {
     $publicacion = Publicacion::with(['user', 'fotografias'])->find($id);
 
     if (! $publicacion || ! $publicacion->isDisponible()) {
-        return redirect()->route('muro')->with('warning', 'Esta publicación no está disponible para consulta');
+        $urlVolver = $sanitizarRetornoMuro($request);
+        return redirect()->to($urlVolver)->with('warning', 'Esta publicación no está disponible para consulta');
     }
 
     // Si es visitante no autenticado, registrar referencia para retorno seguro (CA-28)
@@ -171,12 +178,13 @@ Route::get('/publicaciones/{id}', function (Request $request, $id) use ($sanitiz
     return view('publicaciones.show', compact('publicacion', 'urlVolver'));
 })->name('publicaciones.show');
 
-// Solicitud de autenticación para apartados privados desde el muro público (HU Muro / HU-02, HU-10 / Tarea 10.4)
+// Solicitud de autenticación para apartados privados desde el muro público (HU Muro / HU-02, HU-10 / Tarea 10.4, HU-09 / Tarea 09.4)
 Route::get('/publicaciones/{id}/detalles-privados', function (Request $request, $id) use ($sanitizarRetornoMuro) {
     $publicacion = Publicacion::find($id);
 
     if (! $publicacion || ! $publicacion->isDisponible()) {
-        return redirect()->route('muro')->with('warning', 'Esta publicación no está disponible para consulta');
+        $urlVolver = $sanitizarRetornoMuro($request);
+        return redirect()->to($urlVolver)->with('warning', 'Esta publicación no está disponible para consulta');
     }
 
     session()->put('intended_publication_id', $publicacion->id);

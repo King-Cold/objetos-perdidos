@@ -11,9 +11,9 @@
                     </p>
                 </div>
                 <div>
-                    <a href="{{ $urlVolver ?? route('muro') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors shadow-2xs">
+                    <a href="{{ $urlVolver ?? route('muro') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors shadow-2xs" id="boton-volver-muro-header" title="Volver al muro">
                         <span aria-hidden="true">&larr;</span>
-                        <span>Volver al Muro</span>
+                        <span>Volver al muro</span>
                     </a>
                 </div>
             </div>
@@ -535,8 +535,8 @@
                             Detalle de Publicación
                         </span>
                     </div>
-                    <a href="{{ $urlVolver ?? route('muro') }}" class="px-3.5 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors">
-                        Volver al Muro
+                    <a href="{{ $urlVolver ?? route('muro') }}" class="px-3.5 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors" id="boton-volver-muro-guest-header" title="Volver al muro">
+                        Volver al muro
                     </a>
                 </div>
             </header>
@@ -615,8 +615,8 @@
 
                             <!-- Acciones -->
                             <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                                <a href="{{ $urlVolver ?? route('muro') }}" class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold text-center transition-colors">
-                                    Volver al Muro
+                                <a href="{{ $urlVolver ?? route('muro') }}" class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold text-center transition-colors" id="boton-volver-muro-guest-actions" title="Volver al muro">
+                                    Volver al muro
                                 </a>
                                 <a href="{{ route('login') }}" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold text-center transition-colors shadow-xs">
                                     Iniciar sesión
