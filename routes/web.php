@@ -256,6 +256,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/reportes/{id}/cancelar', [ReporteController::class, 'confirmCancel'])->name('reportes.cancelar');
     Route::match(['post', 'delete'], '/reportes/{id}/cancelar', [ReporteController::class, 'cancel'])->name('reportes.cancel');
 
+    // Validación y solicitud de eliminación permanente de reportes propios cancelados (HU-11 / Subtarea 2)
+    Route::match(['post', 'delete'], '/reportes/{id}', [ReporteController::class, 'destroy'])->name('reportes.destroy');
+    Route::match(['post', 'delete'], '/reportes/{id}/eliminar', [ReporteController::class, 'destroy'])->name('reportes.eliminar');
+
     // Perfil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

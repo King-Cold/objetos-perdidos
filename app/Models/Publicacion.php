@@ -511,6 +511,91 @@ class Publicacion extends Model
         return true;
     }
 
+    /**
+     * Determina si la publicación fue cancelada administrativamente por personal de moderación (HU-07 / HU-11).
+     */
+    public function isCanceladoAdministrativamente(): bool
+    {
+        if ($this->decisiones()->where('tipo_decision', DecisionModeracion::TIPO_CANCELADA)->exists()) {
+            return true;
+        }
+
+        if (! empty($this->folio_referencia_duplicado)) {
+            return true;
+        }
+
+        if (static::where('folio_referencia_duplicado', $this->folio)->exists()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Comprueba si la publicación cuenta con devoluciones, incidencias, registros de resguardo
+     * u otros antecedentes que deban conservarse institucionalmente (HU-11 / Subtarea 2).
+     */
+    public function hasProcesosOAntecedentesProtegidos(): bool
+    {
+        // 1. Procesos o registros de devolución
+        if ((bool) $this->devolucion_en_proceso || ! empty($this->estado_devolucion) || $this->estado === self::ESTADO_DEVUELTO) {
+            return true;
+        }
+
+        // 2. Incidencias abiertas o registradas
+        if ((bool) $this->incidencia_abierta || (bool) $this->tiene_incidencia) {
+            return true;
+        }
+
+        // 3. Situación de resguardo físico confirmada en biblioteca
+        if ($this->situacion_resguardo === self::RESGUARDO_CONFIRMADO || str_contains(mb_strtolower((string) $this->situacion_resguardo), 'confirmado')) {
+            return true;
+        }
+
+        // 4. Cancelación administrativa u obligación de conservación por duplicados / decisiones
+        if ($this->isCanceladoAdministrativamente()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Obtiene el mensaje explicativo de la restricción que impide la eliminación (HU-11 / Subtarea 2).
+     */
+    public function getMotivoRestriccionEliminacion(): ?string
+    {
+        if (! $this->isCancelado()) {
+            return 'El estado del reporte cambió. Consulta su información actual antes de continuar';
+        }
+
+        if ((bool) $this->devolucion_en_proceso || ! empty($this->estado_devolucion) || $this->estado === self::ESTADO_DEVUELTO) {
+            return 'No se puede eliminar la publicación porque cuenta con un proceso o registro de devolución que debe conservarse.';
+        }
+
+        if ((bool) $this->incidencia_abierta || (bool) $this->tiene_incidencia) {
+            return 'No se puede eliminar la publicación porque tiene una incidencia asociada o en investigación que debe conservarse.';
+        }
+
+        if ($this->situacion_resguardo === self::RESGUARDO_CONFIRMADO || str_contains(mb_strtolower((string) $this->situacion_resguardo), 'confirmado')) {
+            return 'No se puede eliminar la publicación porque el objeto cuenta con registro de resguardo físico en biblioteca institucional.';
+        }
+
+        if ($this->isCanceladoAdministrativamente()) {
+            return 'No se puede eliminar la publicación porque fue cancelada administrativamente y su historial debe conservarse como antecedente institucional.';
+        }
+
+        return null;
+    }
+
+    /**
+     * Determina si la publicación cumple todas las reglas para ser eliminada permanentemente (HU-11 / Subtarea 2).
+     */
+    public function puedeEliminarsePermanentemente(): bool
+    {
+        return $this->isCancelado() && ! $this->hasProcesosOAntecedentesProtegidos();
+    }
+
     public function getFotoPrincipalAttribute(): ?Fotografia
     {
         return $this->fotografias->firstWhere('es_principal', true)

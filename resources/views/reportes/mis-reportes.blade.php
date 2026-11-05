@@ -84,6 +84,15 @@
                 </div>
             @endif
 
+            @if (session('error'))
+                <div class="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-sm font-semibold text-rose-900 flex items-center gap-3 shadow-2xs">
+                    <svg class="w-5 h-5 text-rose-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                    <span>{{ session('error') }}</span>
+                </div>
+            @endif
+
             @if (isset($reportes) && $reportes->count() > 0)
                 <!-- Distribución en cuadrícula con tarjetas compactas, borde guinda y fotografías mostradas abajito -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
@@ -317,6 +326,117 @@
                                         </svg>
                                         <span>Cancelar reporte</span>
                                     </a>
+                                @endif
+
+                                @if ($rep->isCancelado())
+                                    {{-- Botón y Modal de eliminación permanente para publicaciones canceladas (HU-11 / Subtarea 1) --}}
+                                    <button
+                                        type="button"
+                                        x-data=""
+                                        x-on:click.prevent="$dispatch('open-modal', 'confirmar-eliminacion-{{ $rep->id }}')"
+                                        class="inline-flex items-center justify-center gap-1.5 w-full py-1 px-2.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50/60 text-slate-500 hover:text-rose-700 text-xs font-semibold transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                                        title="Eliminar permanentemente este reporte cancelado"
+                                    >
+                                        <svg class="w-3.5 h-3.5 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        <span>Eliminar permanentemente</span>
+                                    </button>
+
+                                    {{-- Ventana modal de confirmación de eliminación permanente (HU-11 / Subtarea 1) --}}
+                                    <x-modal name="confirmar-eliminacion-{{ $rep->id }}" focusable maxWidth="md">
+                                        <div
+                                            role="dialog"
+                                            aria-modal="true"
+                                            aria-labelledby="modal-eliminar-title-{{ $rep->id }}"
+                                            aria-describedby="modal-eliminar-desc-{{ $rep->id }}"
+                                            class="p-5 sm:p-6 space-y-4 text-left"
+                                        >
+                                            {{-- Encabezado con Icono y Título --}}
+                                            <div class="flex items-start justify-between gap-3">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                                                        <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <h3 id="modal-eliminar-title-{{ $rep->id }}" class="text-base font-black text-slate-900 leading-tight">
+                                                            ¿Eliminar reporte permanentemente?
+                                                        </h3>
+                                                        <p class="text-xs text-slate-500 mt-0.5">
+                                                            Confirmación para el reporte cancelado
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    type="button"
+                                                    x-on:click="$dispatch('close')"
+                                                    class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300 cursor-pointer"
+                                                    title="Cerrar ventana"
+                                                >
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+
+                                            {{-- Datos de la publicación (Folio y Nombre/Título) --}}
+                                            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2 text-xs">
+                                                <div class="flex justify-between items-center py-1 border-b border-slate-200/60">
+                                                    <span class="text-slate-500 font-medium">Folio único:</span>
+                                                    <span class="font-bold text-slate-900 font-mono tracking-tight">{{ $rep->folio }}</span>
+                                                </div>
+                                                <div class="flex justify-between items-center py-1">
+                                                    <span class="text-slate-500 font-medium">Objeto reportado:</span>
+                                                    <span class="font-bold text-slate-900 truncate max-w-[200px] sm:max-w-[240px]" title="{{ $rep->nombre ?? $rep->titulo }}">
+                                                        {{ $rep->nombre ?? $rep->titulo }}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {{-- Advertencia clara de eliminación permanente e irreversible --}}
+                                            <div id="modal-eliminar-desc-{{ $rep->id }}" class="flex items-start gap-3 p-3.5 rounded-2xl bg-rose-50/80 border border-rose-200 text-rose-900 text-xs">
+                                                <svg class="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                </svg>
+                                                <div class="space-y-1">
+                                                    <p class="font-bold text-rose-950">
+                                                        Advertencia de eliminación definitiva
+                                                    </p>
+                                                    <p class="text-rose-800 leading-relaxed">
+                                                        Esta acción es <strong>permanente e irreversible</strong>. El reporte y todos sus datos asociados serán eliminados definitivamente y <strong>no podrán recuperarse</strong>.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {{-- Botones de Acción: Volver y Eliminar permanentemente --}}
+                                            <div class="pt-3 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5">
+                                                <button
+                                                    type="button"
+                                                    x-on:click="$dispatch('close')"
+                                                    class="w-full sm:w-auto px-5 py-2.5 rounded-full border border-slate-300 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+                                                >
+                                                    Volver
+                                                </button>
+
+                                                <form method="POST" action="{{ route('reportes.destroy', $rep->id) }}" class="inline w-full sm:w-auto">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button
+                                                        type="submit"
+                                                        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
+                                                    >
+                                                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                        <span>Eliminar permanentemente</span>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </x-modal>
                                 @endif
                             </div>
                         </div>

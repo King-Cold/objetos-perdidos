@@ -313,6 +313,128 @@ class ReporteController extends Controller
     }
 
     /**
+     * Elimina permanentemente un reporte propio cancelado y elegible (HU-11 / Subtareas 2 y 3).
+     *
+     * Validaciones y reglas de negocio:
+     * 1. Sesión autenticada (garantizada por middleware 'auth').
+     * 2. Comprobación estricta de propiedad/autoría (403 Forbidden ante publicaciones ajenas).
+     * 3. Comprobación de estado actual (debe permanecer en «Cancelado»).
+     * 4. Validación de antecedentes y procesos protegidos (devoluciones, incidencias, resguardo o cancelaciones administrativas).
+     * 5. Eliminación de fotografías asociadas exclusivamente al reporte (sin afectar archivos de otros reportes).
+     * 6. Coordinación atómica y reversible entre base de datos y sistema de archivos ante posibles fallas.
+     * 7. Actualización del historial («Mis reportes») y bloqueo de acceso mediante enlaces anteriores.
+     */
+    public function destroy(Request $request, int|string $id): RedirectResponse
+    {
+        $publicacion = Publicacion::with(['fotografias', 'decisiones'])->findOrFail($id);
+
+        // 1 & 2. Comprobación estricta de propiedad (autoría):
+        // Se impide la eliminación de publicaciones ajenas (incluso administradores en este flujo de usuario)
+        if ($publicacion->user_id !== Auth::id()) {
+            abort(403, 'No tienes permiso para realizar esta acción');
+        }
+
+        // 3. Comprobar que continúe en estado Cancelado
+        if (! $publicacion->isCancelado()) {
+            return redirect()->route('reportes.mis-reportes')
+                ->with('warning', 'El estado del reporte cambió. Consulta su información actual antes de continuar');
+        }
+
+        // 4. Comprobar antecedentes protegidos (devoluciones, incidencias, resguardo y cancelaciones administrativas)
+        if ($publicacion->hasProcesosOAntecedentesProtegidos()) {
+            $motivo = $publicacion->getMotivoRestriccionEliminacion()
+                ?? 'No se puede eliminar la publicación porque cuenta con procesos o antecedentes protegidos que deben conservarse.';
+
+            return redirect()->route('reportes.mis-reportes')
+                ->with('warning', $motivo);
+        }
+
+        // HU-11 / Subtarea 3: Identificar fotografías exclusivas de la publicación (no compartidas con otros reportes)
+        $fotografias = $publicacion->fotografias;
+        $rutasExclusivas = [];
+
+        foreach ($fotografias as $foto) {
+            if (! empty($foto->ruta)) {
+                $esCompartida = Fotografia::where('ruta', $foto->ruta)
+                    ->where('publicacion_id', '!=', $publicacion->id)
+                    ->exists();
+
+                if (! $esCompartida && ! in_array($foto->ruta, $rutasExclusivas, true)) {
+                    $rutasExclusivas[] = $foto->ruta;
+                }
+            }
+        }
+
+        $archivosMovidos = [];
+
+        DB::beginTransaction();
+        try {
+            // Mover archivos exclusivos a zona temporal para garantizar atomicidad y reversibilidad
+            foreach ($rutasExclusivas as $ruta) {
+                foreach (['local', 'public'] as $disk) {
+                    if (Storage::disk($disk)->exists($ruta)) {
+                        $tempPath = 'trash/' . Str::random(32) . '_' . basename($ruta);
+                        if (Storage::disk($disk)->move($ruta, $tempPath)) {
+                            $archivosMovidos[] = [
+                                'disk' => $disk,
+                                'original' => $ruta,
+                                'temp' => $tempPath,
+                            ];
+                        } else {
+                            throw new \RuntimeException("No fue posible preparar para eliminación el archivo físico en disco {$disk}: {$ruta}");
+                        }
+                    }
+                }
+            }
+
+            // Eliminar registros hijos en base de datos
+            $publicacion->fotografias()->delete();
+            if ($publicacion->decisiones()->exists()) {
+                $publicacion->decisiones()->delete();
+            }
+
+            // Eliminar permanentemente el registro principal de la publicación
+            $publicacion->delete();
+
+            DB::commit();
+
+            // Purgar definitivamente los archivos temporales tras la confirmación exitosa en base de datos
+            foreach ($archivosMovidos as $item) {
+                try {
+                    Storage::disk($item['disk'])->delete($item['temp']);
+                } catch (\Throwable $purgeEx) {
+                    Log::warning("No se pudo purgar el archivo temporal {$item['temp']} en disco {$item['disk']}: " . $purgeEx->getMessage());
+                }
+            }
+
+            return redirect()->route('reportes.mis-reportes')
+                ->with('status', 'La publicación se eliminó permanentemente');
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            // Restaurar archivos a sus ubicaciones originales en caso de falla
+            foreach ($archivosMovidos as $item) {
+                try {
+                    if (Storage::disk($item['disk'])->exists($item['temp'])) {
+                        Storage::disk($item['disk'])->move($item['temp'], $item['original']);
+                    }
+                } catch (\Throwable $restoreEx) {
+                    Log::error("Error al restaurar archivo físico [{$item['original']}] tras fallo de eliminación: " . $restoreEx->getMessage());
+                }
+            }
+
+            Log::error('Error durante la eliminación definitiva de la publicación: ' . $e->getMessage(), [
+                'publicacion_id' => $id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->route('reportes.mis-reportes')
+                ->with('error', 'Ocurrió un error al procesar la eliminación permanente. El reporte no fue modificado.');
+        }
+    }
+
+    /**
      * Muestra el formulario para registrar un hallazgo (objeto encontrado).
      * Tareas 05.1 y 05.2
      */

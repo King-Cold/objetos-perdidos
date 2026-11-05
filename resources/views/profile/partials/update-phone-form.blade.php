@@ -11,12 +11,11 @@
             this.phone = this.originalPhone;
             this.hasError = false;
             if (this.$refs.phoneInput) {
-                this.$refs.phoneInput.value = this.originalPhone;
+                this.$refs.phoneInput.value = this.originalPhone;oo
             }
             if (window.history.length > 1) {
                 window.history.back();
-            } else {
-                window.location.href = @js(route('reportes.mis-reportes'));
+            } else {                window.location.href = @js(route('reportes.mis-reportes'));
             }
         }
     }"
