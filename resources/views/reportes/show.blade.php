@@ -61,15 +61,21 @@
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <span class="px-3 py-1 rounded-full text-xs font-extrabold uppercase
-                            @if ($publicacion->estado === 'Aprobada') bg-emerald-100 text-emerald-800
-                            @elseif ($publicacion->estado === 'Pendiente de aprobación') bg-amber-100 text-amber-800
-                            @elseif ($publicacion->estado === 'Requiere corrección' || $publicacion->estado === 'Corrección solicitada') bg-rose-100 text-rose-800
-                            @elseif ($publicacion->estado === 'Cancelado') bg-slate-100 text-slate-600
-                            @else bg-blue-100 text-blue-800
-                            @endif">
-                            {{ $publicacion->estado }}
-                        </span>
+                        @if ($publicacion->devolucion_en_proceso || $publicacion->estado_devolucion === 'Pendiente de verificación')
+                            <span class="px-3 py-1 rounded-full text-xs font-extrabold uppercase bg-amber-100 text-amber-900 border border-amber-300">
+                                Pendiente de verificación
+                            </span>
+                        @else
+                            <span class="px-3 py-1 rounded-full text-xs font-extrabold uppercase
+                                @if ($publicacion->estado === 'Aprobada') bg-emerald-100 text-emerald-800
+                                @elseif ($publicacion->estado === 'Pendiente de aprobación') bg-amber-100 text-amber-800
+                                @elseif ($publicacion->estado === 'Requiere corrección' || $publicacion->estado === 'Corrección solicitada') bg-rose-100 text-rose-800
+                                @elseif ($publicacion->estado === 'Cancelado') bg-slate-100 text-slate-600
+                                @else bg-blue-100 text-blue-800
+                                @endif">
+                                {{ $publicacion->estado }}
+                            </span>
+                        @endif
 
                         @if ($publicacion->isDisponible())
                             <span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
@@ -163,17 +169,36 @@
                     </div>
                 @endif
 
-                <!-- Acciones Permitidas (CA-03, CA-09) -->
-                <div class="pt-6 border-t border-slate-100 flex items-center justify-between">
-                    <a href="{{ route('reportes.mis-reportes') }}" class="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors">
+                <!-- Acciones Permitidas (CA-03, CA-09, HU-11 CA-01) -->
+                <div class="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <a href="{{ route('reportes.mis-reportes') }}" class="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold text-center transition-colors">
                         &larr; Volver a Mis Reportes
                     </a>
 
-                    @if ($publicacion->puedeEditarse())
-                        <a href="{{ route('reportes.edit', $publicacion->id) }}" class="px-4 py-2 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors shadow-xs">
-                            Editar reporte
-                        </a>
-                    @endif
+                    <div class="flex items-center gap-2">
+                        @if ($publicacion->puedeRegistrarDevolucion())
+                            <a href="{{ route('devoluciones.create', $publicacion->id) }}" class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#691C32] via-[#7D1636] to-[#691C32] hover:from-[#520B1D] hover:to-[#520B1D] text-white text-xs font-bold transition-all shadow-xs">
+                                <svg class="w-3.5 h-3.5 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Registrar devolución</span>
+                            </a>
+                        @elseif ($publicacion->devolucionActiva)
+                            <a href="{{ route('devoluciones.show', $publicacion->devolucionActiva->id) }}" class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all shadow-xs">
+                                <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                <span>Ver seguimiento de devolución</span>
+                            </a>
+                        @endif
+
+                        @if ($publicacion->puedeEditarse())
+                            <a href="{{ route('reportes.edit', $publicacion->id) }}" class="px-4 py-2 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold text-center transition-colors shadow-xs">
+                                Editar reporte
+                            </a>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>

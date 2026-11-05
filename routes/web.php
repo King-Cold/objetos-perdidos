@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\ModeracionReporteController;
+use App\Http\Controllers\DevolucionController;
 use App\Http\Controllers\FotografiaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReporteController;
@@ -259,6 +260,12 @@ Route::middleware('auth')->group(function () {
     // Validación y solicitud de eliminación permanente de reportes propios cancelados (HU-11 / Subtarea 2)
     Route::match(['post', 'delete'], '/reportes/{id}', [ReporteController::class, 'destroy'])->name('reportes.destroy');
     Route::match(['post', 'delete'], '/reportes/{id}/eliminar', [ReporteController::class, 'destroy'])->name('reportes.eliminar');
+
+    // HU-11: Registro y seguimiento de devolución física (Tareas 1 a 4)
+    Route::get('/reportes/{id}/devolucion', [DevolucionController::class, 'create'])->name('devoluciones.create');
+    Route::post('/reportes/{id}/devolucion', [DevolucionController::class, 'store'])->name('devoluciones.store');
+    Route::get('/devoluciones/{id}', [DevolucionController::class, 'show'])->name('devoluciones.show');
+    Route::get('/devoluciones/{id}/evidencia', [DevolucionController::class, 'evidencia'])->name('devoluciones.evidencia');
 
     // Perfil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

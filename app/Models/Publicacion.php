@@ -149,6 +149,19 @@ class Publicacion extends Model
             ->orderBy('id', 'desc');
     }
 
+    public function devoluciones(): HasMany
+    {
+        return $this->hasMany(Devolucion::class)
+            ->orderBy('id', 'desc');
+    }
+
+    public function devolucionActiva(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Devolucion::class)
+            ->whereIn('estado', [Devolucion::ESTADO_PENDIENTE, Devolucion::ESTADO_VERIFICADA])
+            ->latestOfMany();
+    }
+
     public function isCorreccionSolicitada(): bool
     {
         return $this->estado === self::ESTADO_CORRECCION_SOLICITADA;
@@ -663,5 +676,44 @@ class Publicacion extends Model
             'estado' => self::ESTADO_PENDIENTE,
             'fecha_envio_revision' => Carbon::now(self::TIMEZONE),
         ]);
+    }
+
+    /**
+     * Determina si la publicación cumple las condiciones para que su autor original
+     * registre una devolución física (HU-11 / CA-01, CA-02).
+     */
+    public function puedeRegistrarDevolucion(): bool
+    {
+        // 1. Debe estar aprobada
+        if ($this->estado !== self::ESTADO_APROBADA) {
+            return false;
+        }
+
+        // 2. Debe estar disponible
+        if (! (bool) $this->disponible) {
+            return false;
+        }
+
+        // 3. Debe estar vigente (no vencida)
+        if ($this->isVencida()) {
+            return false;
+        }
+
+        // 4. Debe continuar bajo resguardo del autor (no bajo resguardo confirmado de biblioteca)
+        if ($this->situacion_resguardo === self::RESGUARDO_CONFIRMADO) {
+            return false;
+        }
+
+        // 5. No debe existir otra devolución activa o en proceso
+        if ((bool) $this->devolucion_en_proceso || in_array($this->estado_devolucion, ['Pendiente de verificación', 'Verificada', 'En proceso', 'Devuelto'], true)) {
+            return false;
+        }
+
+        // 6. No debe existir una incidencia que impida realizar la operación
+        if ((bool) $this->incidencia_abierta || (bool) $this->tiene_incidencia || $this->estado_devolucion === 'En incidencia') {
+            return false;
+        }
+
+        return true;
     }
 }

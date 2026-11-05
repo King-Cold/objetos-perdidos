@@ -29,6 +29,7 @@ class ReporteController extends Controller
         $reportes = Publicacion::with([
             'fotografias' => fn ($q) => $q->orderByDesc('es_principal'),
             'user',
+            'devolucionActiva',
         ])
             ->where('user_id', Auth::id())
             ->latest('id')
@@ -43,7 +44,11 @@ class ReporteController extends Controller
      */
     public function show(int|string $id): View
     {
-        $publicacion = Publicacion::with(['fotografias' => fn ($q) => $q->orderByDesc('es_principal'), 'user'])
+        $publicacion = Publicacion::with([
+            'fotografias' => fn ($q) => $q->orderByDesc('es_principal'),
+            'user',
+            'devolucionActiva',
+        ])
             ->findOrFail($id);
 
         // CT-01, CT-02: Protección estricta contra acceso de usuarios ajenos

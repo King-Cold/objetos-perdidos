@@ -67,11 +67,24 @@
             @endif
 
             @if (session('status'))
-                <div class="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-sm font-semibold text-emerald-800 flex items-center gap-3 shadow-2xs">
-                    <svg class="w-5 h-5 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                    </svg>
-                    <span>{{ session('status') }}</span>
+                <div class="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-sm font-semibold text-emerald-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-2xs">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        <span>{{ session('status') }}</span>
+                    </div>
+
+                    @if (session('devolucion_registrada_id'))
+                        <div>
+                            <a href="{{ route('devoluciones.show', session('devolucion_registrada_id')) }}" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all shadow-2xs">
+                                <span>Ver seguimiento privado</span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </a>
+                        </div>
+                    @endif
                 </div>
             @endif
 
@@ -105,7 +118,11 @@
                                         {{ $rep->folio }}
                                     </span>
 
-                                    @if ($rep->estado === 'Aprobada')
+                                    @if ($rep->devolucion_en_proceso || $rep->estado_devolucion === 'Pendiente de verificación')
+                                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-300 ring-1 ring-amber-200">
+                                            Pendiente de verificación
+                                        </span>
+                                    @elseif ($rep->estado === 'Aprobada')
                                         <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
                                             Aprobada
                                         </span>
@@ -295,8 +312,26 @@
                                 @endif
                             </div>
 
-                            <!-- Fila 5: Pie de tarjeta con acciones permitidas (CA-03, CA-06, CA-09, CA-31, CA-38) -->
+                            <!-- Fila 5: Pie de tarjeta con acciones permitidas (CA-03, CA-06, CA-09, CA-31, CA-38, HU-11 CA-01) -->
                             <div class="pt-2.5 border-t border-slate-100 mt-1.5 space-y-1.5">
+                                {{-- Opción destacada: Registrar devolución por el autor (HU-11 / CA-01) --}}
+                                @if ($rep->puedeRegistrarDevolucion())
+                                    <a href="{{ route('devoluciones.create', $rep->id) }}" class="inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-[#691C32] via-[#7D1636] to-[#691C32] hover:from-[#520B1D] hover:to-[#520B1D] text-white text-xs font-bold transition-all shadow-2xs">
+                                        <svg class="w-3.5 h-3.5 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span>Registrar devolución</span>
+                                    </a>
+                                @elseif ($rep->devolucionActiva)
+                                    <a href="{{ route('devoluciones.show', $rep->devolucionActiva->id) }}" class="inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all shadow-2xs">
+                                        <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        <span>Ver seguimiento de devolución</span>
+                                    </a>
+                                @endif
+
                                 <div class="grid {{ $rep->puedeEditarse() ? 'grid-cols-2' : 'grid-cols-1' }} gap-2">
                                     <!-- Botón Ver detalle (CA-06: abre detalle privado) -->
                                     <a href="{{ route('reportes.show', $rep->id) }}" class="inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs">
