@@ -382,8 +382,8 @@
                                     </a>
                                 @endif
 
-                                @if ($rep->isCancelado())
-                                    {{-- Botón y Modal de eliminación permanente para publicaciones canceladas (HU-11 / Subtarea 1) --}}
+                                @if ($rep->puedeEliminarsePermanentemente())
+                                    {{-- Botón y Modal de eliminación permanente para publicaciones canceladas elegibles sin devoluciones, resguardo ni incidencias (HU-11 / HU-13) --}}
                                     <button
                                         type="button"
                                         x-data=""

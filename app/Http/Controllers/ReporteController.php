@@ -30,6 +30,8 @@ class ReporteController extends Controller
             'fotografias' => fn ($q) => $q->orderByDesc('es_principal'),
             'user',
             'devolucionActiva',
+            'devoluciones',
+            'decisiones',
         ])
             ->where('user_id', Auth::id())
             ->latest('id')

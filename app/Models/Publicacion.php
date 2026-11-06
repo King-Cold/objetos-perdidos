@@ -556,17 +556,34 @@ class Publicacion extends Model
     public function hasProcesosOAntecedentesProtegidos(): bool
     {
         // 1. Procesos o registros de devolución
-        if ((bool) $this->devolucion_en_proceso || ! empty($this->estado_devolucion) || $this->estado === self::ESTADO_DEVUELTO) {
+        if (
+            (bool) $this->devolucion_en_proceso
+            || ! empty($this->estado_devolucion)
+            || $this->estado === self::ESTADO_DEVUELTO
+            || ($this->relationLoaded('devoluciones') ? $this->devoluciones->isNotEmpty() : $this->devoluciones()->exists())
+        ) {
             return true;
         }
 
         // 2. Incidencias abiertas o registradas
-        if ((bool) $this->incidencia_abierta || (bool) $this->tiene_incidencia) {
+        if (
+            (bool) $this->incidencia_abierta
+            || (bool) $this->tiene_incidencia
+            || ($this->relationLoaded('decisiones')
+                ? $this->decisiones->contains(fn ($d) => str_contains(mb_strtolower((string) $d->tipo_decision), 'incidencia'))
+                : $this->decisiones()->where('tipo_decision', 'like', '%incidencia%')->exists())
+        ) {
             return true;
         }
 
         // 3. Situación de resguardo físico confirmada en biblioteca
-        if ($this->situacion_resguardo === self::RESGUARDO_CONFIRMADO || str_contains(mb_strtolower((string) $this->situacion_resguardo), 'confirmado')) {
+        if (
+            $this->situacion_resguardo === self::RESGUARDO_CONFIRMADO
+            || str_contains(mb_strtolower((string) $this->situacion_resguardo), 'confirmado')
+            || ($this->relationLoaded('decisiones')
+                ? $this->decisiones->contains(fn ($d) => str_contains(mb_strtolower((string) $d->tipo_decision), 'recepcion'))
+                : $this->decisiones()->where('tipo_decision', 'like', '%recepcion%')->exists())
+        ) {
             return true;
         }
 
@@ -587,15 +604,32 @@ class Publicacion extends Model
             return 'El estado del reporte cambió. Consulta su información actual antes de continuar';
         }
 
-        if ((bool) $this->devolucion_en_proceso || ! empty($this->estado_devolucion) || $this->estado === self::ESTADO_DEVUELTO) {
+        if (
+            (bool) $this->devolucion_en_proceso
+            || ! empty($this->estado_devolucion)
+            || $this->estado === self::ESTADO_DEVUELTO
+            || ($this->relationLoaded('devoluciones') ? $this->devoluciones->isNotEmpty() : $this->devoluciones()->exists())
+        ) {
             return 'No se puede eliminar la publicación porque cuenta con un proceso o registro de devolución que debe conservarse.';
         }
 
-        if ((bool) $this->incidencia_abierta || (bool) $this->tiene_incidencia) {
+        if (
+            (bool) $this->incidencia_abierta
+            || (bool) $this->tiene_incidencia
+            || ($this->relationLoaded('decisiones')
+                ? $this->decisiones->contains(fn ($d) => str_contains(mb_strtolower((string) $d->tipo_decision), 'incidencia'))
+                : $this->decisiones()->where('tipo_decision', 'like', '%incidencia%')->exists())
+        ) {
             return 'No se puede eliminar la publicación porque tiene una incidencia asociada o en investigación que debe conservarse.';
         }
 
-        if ($this->situacion_resguardo === self::RESGUARDO_CONFIRMADO || str_contains(mb_strtolower((string) $this->situacion_resguardo), 'confirmado')) {
+        if (
+            $this->situacion_resguardo === self::RESGUARDO_CONFIRMADO
+            || str_contains(mb_strtolower((string) $this->situacion_resguardo), 'confirmado')
+            || ($this->relationLoaded('decisiones')
+                ? $this->decisiones->contains(fn ($d) => str_contains(mb_strtolower((string) $d->tipo_decision), 'recepcion'))
+                : $this->decisiones()->where('tipo_decision', 'like', '%recepcion%')->exists())
+        ) {
             return 'No se puede eliminar la publicación porque el objeto cuenta con registro de resguardo físico en biblioteca institucional.';
         }
 
