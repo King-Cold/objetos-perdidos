@@ -364,6 +364,14 @@
                                     @endif
                                 </div>
 
+                                <!-- Botón Consultar historial (HU-13 / Acceso al historial desde Mis Reportes) -->
+                                <a href="{{ route('reportes.historial', $rep->id) }}" class="inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-[#691C32]/40 text-slate-700 hover:text-[#691C32] text-xs font-bold transition-all shadow-2xs">
+                                    <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>Consultar historial</span>
+                                </a>
+
                                 <!-- Botón Cancelar reporte (CA-31) -->
                                 @if ($rep->puedeCancelarse())
                                     <a href="{{ route('reportes.cancelar', $rep->id) }}" class="inline-flex items-center justify-center gap-1.5 w-full py-1 px-2.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50/60 text-slate-500 hover:text-rose-700 text-xs font-semibold transition-all">

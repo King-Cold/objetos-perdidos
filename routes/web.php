@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ModeracionReporteController;
 use App\Http\Controllers\Admin\VerificacionDevolucionController;
 use App\Http\Controllers\DevolucionController;
 use App\Http\Controllers\FotografiaController;
+use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReporteController;
 use App\Models\Publicacion;
@@ -240,6 +241,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::post('/recepciones/{id}/confirmar', function ($id) {
         return redirect()->back()->with('status', 'Recepción física confirmada en biblioteca');
     })->name('recepciones.confirmar');
+
+    // Historial del objeto desde apartados de gestión (HU-13 / Tarea 1)
+    Route::get('/reportes/{id}/historial', [HistorialController::class, 'show'])->name('admin.reportes.historial');
 });
 
 // Rutas protegidas para usuarios autenticados (CA-12, CA-13, CA-14, CA-15)
@@ -255,6 +259,10 @@ Route::middleware('auth')->group(function () {
     // Detalle privado de reporte propio (HU-06 Tarea 06.1: CA-06, CA-07, CA-08)
     Route::get('/reportes/{id}', [ReporteController::class, 'show'])
         ->name('reportes.show');
+
+    // Historial privado del objeto (HU-13 / Tarea 1: Acceso y encabezado privado)
+    Route::get('/reportes/{id}/historial', [HistorialController::class, 'show'])
+        ->name('reportes.historial');
 
     // Edición con comprobación estricta de autoría y estado (HU-06 Tarea 06.2: CA-09 a CA-17, CA-22, CA-23)
     Route::get('/reportes/{id}/editar', [ReporteController::class, 'edit'])->name('reportes.edit');

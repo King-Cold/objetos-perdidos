@@ -9,7 +9,13 @@
                     Consulta de datos capturados, fotografías y situación actual
                 </p>
             </div>
-            <div>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('reportes.historial', $publicacion->id) }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-[#691C32] text-xs font-bold transition-all shadow-2xs">
+                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Consultar historial</span>
+                </a>
                 <a href="{{ route('reportes.mis-reportes') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors">
                     <span aria-hidden="true">&larr;</span>
                     <span>Volver a Mis Reportes</span>

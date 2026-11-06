@@ -184,19 +184,32 @@
                                             </div>
                                         </td>
 
-                                        <!-- 6. Acción «Revisar» (Requerimiento 9) -->
+                                        <!-- 6. Acciones «Historial» y «Revisar» (HU-13 / Acceso al historial desde gestión) -->
                                         <td class="py-4 px-4 sm:px-6 whitespace-nowrap text-right">
-                                            <a
-                                                href="{{ route('admin.moderacion.show', $rep->id) }}"
-                                                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover active:bg-[#430918] text-white font-bold text-xs tracking-wide shadow-xs hover:shadow transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-tecnm-gold cursor-pointer"
-                                                title="Revisar reporte {{ $rep->folio ?? ('#' . $rep->id) }}"
-                                            >
-                                                <svg class="w-3.5 h-3.5 text-amber-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                </svg>
-                                                <span>Revisar</span>
-                                            </a>
+                                            <div class="inline-flex items-center gap-2">
+                                                <a
+                                                    href="{{ route('reportes.historial', $rep->id) }}"
+                                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-[#691C32] hover:bg-rose-50/40 text-slate-700 hover:text-[#691C32] font-semibold text-xs transition-all shadow-2xs"
+                                                    title="Consultar historial del objeto {{ $rep->folio ?? ('#' . $rep->id) }}"
+                                                >
+                                                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <span>Historial</span>
+                                                </a>
+
+                                                <a
+                                                    href="{{ route('admin.moderacion.show', $rep->id) }}"
+                                                    class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover active:bg-[#430918] text-white font-bold text-xs tracking-wide shadow-xs hover:shadow transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-tecnm-gold cursor-pointer"
+                                                    title="Revisar reporte {{ $rep->folio ?? ('#' . $rep->id) }}"
+                                                >
+                                                    <svg class="w-3.5 h-3.5 text-amber-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                    <span>Revisar</span>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach

@@ -57,8 +57,16 @@
                         </p>
                     </div>
 
-                    <!-- Insignia de estado -->
-                    <div class="shrink-0">
+                    <!-- Acciones e Insignia de estado (HU-13 / Acceso al historial desde moderación) -->
+                    <div class="flex items-center gap-2.5 shrink-0">
+                        <a href="{{ route('reportes.historial', $reporte->id) }}"
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-[#691C32] text-xs font-bold transition-all shadow-2xs">
+                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Ver historial del objeto</span>
+                        </a>
+
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold {{ $reporte->isCancelado() ? 'bg-rose-100 text-rose-900 border border-rose-300' : ($reporte->estado === 'Aprobada' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : ($reporte->isPendienteRevision() ? 'bg-amber-100 text-amber-900 border border-amber-300' : ($reporte->isCorreccionSolicitada() ? 'bg-orange-100 text-orange-900 border border-orange-300' : 'bg-slate-100 text-slate-800'))) }}">
                             {{ $reporte->estado }}
                         </span>
