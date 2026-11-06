@@ -112,6 +112,18 @@ class Devolucion extends Model
         return false;
     }
 
+    /**
+     * Comprueba si la fotografía de evidencia vigente se encuentra disponible y legible en almacenamiento local (HU-13).
+     */
+    public function hasEvidenciaDisponible(): bool
+    {
+        if (empty($this->fotografia_ruta)) {
+            return false;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->exists($this->fotografia_ruta);
+    }
+
     public function getFechaEntregaTextoAttribute(): string
     {
         if (! $this->fecha_entrega) {

@@ -309,6 +309,156 @@
                                                 </p>
                                             </div>
                                         @endif
+
+                                        {{-- Detalle completo e independiente de cada evento de devolución y su evidencia vigente (HU-13 / Tarea 3) --}}
+                                        @if (isset($ev['devolucion']) && $ev['devolucion'] instanceof \App\Models\Devolucion)
+                                            @php
+                                                /** @var \App\Models\Devolucion $devItem */
+                                                $devItem = $ev['devolucion'];
+                                                $evidenciaDisponible = $devItem->hasEvidenciaDisponible();
+                                                $estadoRevisionDev = $devItem->estado ?? 'Pendiente de verificación';
+                                                $badgeRevisionClass = match($estadoRevisionDev) {
+                                                    'Verificada', 'Aprobada' => 'bg-emerald-50 text-emerald-900 border-emerald-300',
+                                                    'Requiere corrección' => 'bg-orange-50 text-orange-900 border-orange-300',
+                                                    default => 'bg-amber-50 text-amber-900 border-amber-300',
+                                                };
+                                            @endphp
+                                            <div class="mt-2 pt-2.5 border-t border-emerald-200/60" x-data="{ openDetalleDevolucion: true }">
+                                                <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                                                    <button
+                                                        type="button"
+                                                        @click="openDetalleDevolucion = !openDetalleDevolucion"
+                                                        class="inline-flex items-center gap-1.5 text-xs font-extrabold text-emerald-900 hover:text-[#691C32] transition-colors cursor-pointer"
+                                                    >
+                                                        <svg class="w-4 h-4 transition-transform duration-200" :class="openDetalleDevolucion ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                                        </svg>
+                                                        <span>Detalle de la devolución y evidencia vigente</span>
+                                                    </button>
+
+                                                    <div class="flex items-center gap-2">
+                                                        @if (isset($isAdmin) && $isAdmin)
+                                                            <a href="{{ route('admin.devoluciones.show', $devItem->id) }}"
+                                                               class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-300 hover:border-[#691C32] text-slate-700 hover:text-[#691C32] text-[11px] font-bold transition-colors shadow-2xs">
+                                                                <span>Abrir expediente de devolución</span>
+                                                                <span aria-hidden="true">&rarr;</span>
+                                                            </a>
+                                                        @else
+                                                            <a href="{{ route('devoluciones.show', $devItem->id) }}"
+                                                               class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-300 hover:border-[#691C32] text-slate-700 hover:text-[#691C32] text-[11px] font-bold transition-colors shadow-2xs">
+                                                                <span>Abrir seguimiento de devolución</span>
+                                                                <span aria-hidden="true">&rarr;</span>
+                                                            </a>
+                                                        @endif
+                                                    </div>
+                                                </div>
+
+                                                <div x-show="openDetalleDevolucion" class="p-3.5 sm:p-4 rounded-xl bg-white border border-emerald-200/80 shadow-2xs space-y-3 text-xs">
+                                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 items-start">
+                                                        {{-- Columna 1 y 2: Datos vigentes del receptor, momento de entrega, comprobación y resultado --}}
+                                                        <div class="md:col-span-2 space-y-2.5">
+                                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                                                <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200/80">
+                                                                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                                                        Datos vigentes del receptor
+                                                                    </span>
+                                                                    <strong class="text-slate-900 font-extrabold block mt-0.5">
+                                                                        {{ $devItem->receptor_nombre }}
+                                                                    </strong>
+                                                                    @if (! empty($devItem->receptor_identificador))
+                                                                        <span class="text-[11px] font-mono font-semibold text-slate-600 block">
+                                                                            Identificador: {{ $devItem->receptor_identificador }}
+                                                                        </span>
+                                                                    @endif
+                                                                </div>
+
+                                                                <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200/80">
+                                                                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                                                        Fecha y hora de entrega física
+                                                                    </span>
+                                                                    <strong class="text-slate-900 font-bold block mt-0.5 font-mono">
+                                                                        {{ $devItem->fecha_entrega_texto ?: $ev['fecha_hora_texto'] }}
+                                                                    </strong>
+                                                                    <span class="text-[10px] text-slate-500 block">
+                                                                        Momento físico registrado
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200/80">
+                                                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                                                                    Explicación de la comprobación de propiedad
+                                                                </span>
+                                                                <p class="text-slate-800 font-medium whitespace-pre-line leading-relaxed">
+                                                                    {{ $devItem->explicacion_propiedad }}
+                                                                </p>
+                                                            </div>
+
+                                                            <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                                                <div>
+                                                                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                                                        Resultado de su revisión
+                                                                    </span>
+                                                                    @if ($devItem->admin)
+                                                                        <span class="text-[11px] text-slate-600 block mt-0.5">
+                                                                            Revisado por: <strong class="text-slate-800">{{ $devItem->admin->name }}</strong>
+                                                                        </span>
+                                                                    @endif
+                                                                </div>
+                                                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-extrabold border {{ $badgeRevisionClass }} self-start sm:self-auto">
+                                                                    {{ $estadoRevisionDev }}
+                                                                </span>
+                                                            </div>
+
+                                                            @if ($devItem->isRequiereCorreccion() && ! empty($devItem->motivo_correccion))
+                                                                <div class="p-2.5 rounded-lg bg-orange-50 border border-orange-200 text-orange-950">
+                                                                    <span class="text-[10px] font-bold uppercase tracking-wider text-orange-800 block">
+                                                                        Motivo de corrección vigente:
+                                                                    </span>
+                                                                    <p class="font-medium mt-0.5">{{ $devItem->motivo_correccion }}</p>
+                                                                </div>
+                                                            @endif
+                                                        </div>
+
+                                                        {{-- Columna 3: Última fotografía de evidencia vigente --}}
+                                                        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col items-center justify-center text-center space-y-2">
+                                                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block w-full text-left">
+                                                                Última fotografía de evidencia
+                                                            </span>
+
+                                                            @if ($evidenciaDisponible)
+                                                                <div class="relative rounded-lg overflow-hidden border border-slate-200 bg-white w-full max-w-[180px] aspect-square shadow-2xs">
+                                                                    <img
+                                                                        src="{{ route('devoluciones.evidencia', $devItem->id) }}"
+                                                                        alt="Evidencia vigente de devolución #{{ $devItem->id }}"
+                                                                        class="w-full h-full object-cover"
+                                                                        loading="lazy"
+                                                                    />
+                                                                </div>
+                                                                <span class="text-[11px] font-semibold text-slate-700 truncate max-w-full block" title="{{ $devItem->fotografia_nombre_original ?? 'evidencia.jpg' }}">
+                                                                    {{ $devItem->fotografia_nombre_original ?? 'evidencia.jpg' }}
+                                                                </span>
+                                                                <a href="{{ route('devoluciones.evidencia', $devItem->id) }}"
+                                                                   target="_blank"
+                                                                   rel="noopener noreferrer"
+                                                                   class="inline-flex items-center justify-center gap-1 w-full px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 text-[11px] font-bold transition-colors">
+                                                                    <span>Ver evidencia vigente</span>
+                                                                </a>
+                                                            @else
+                                                                <div class="py-6 px-3 rounded-lg bg-rose-50/60 border border-rose-200/80 text-rose-900 w-full space-y-1">
+                                                                    <svg class="w-6 h-6 mx-auto text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                                    </svg>
+                                                                    <p class="text-xs font-bold">
+                                                                        No fue posible cargar la evidencia
+                                                                    </p>
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach

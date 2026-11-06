@@ -382,41 +382,52 @@
                         </span>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-3 bg-slate-50/80 rounded-2xl border border-slate-200">
-                        <div class="relative group rounded-xl overflow-hidden border border-slate-200 bg-white shrink-0 shadow-2xs">
-                            <img src="{{ route('devoluciones.evidencia', $devolucion->id) }}"
-                                 alt="Fotografía de evidencia de entrega física"
-                                 class="w-32 h-32 sm:w-36 sm:h-36 object-cover"
-                                 loading="lazy" />
-                        </div>
-
-                        <div class="flex-1 space-y-2 text-center sm:text-left min-w-0">
-                            <div>
-                                <span class="text-xs font-bold text-slate-900 block truncate max-w-full" title="{{ $devolucion->fotografia_nombre_original ?? 'evidencia_entrega.jpg' }}">
-                                    {{ $devolucion->fotografia_nombre_original ?? 'evidencia_entrega.jpg' }}
-                                </span>
-                                <span class="text-[11px] text-slate-400 block mt-0.5">
-                                    {{ $devolucion->fotografia_tamano_bytes ? round($devolucion->fotografia_tamano_bytes / 1024, 1) . ' KB' : 'Formato JPG/PNG' }}
-                                </span>
+                    @if ($devolucion->hasEvidenciaDisponible())
+                        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-3 bg-slate-50/80 rounded-2xl border border-slate-200">
+                            <div class="relative group rounded-xl overflow-hidden border border-slate-200 bg-white shrink-0 shadow-2xs">
+                                <img src="{{ route('devoluciones.evidencia', $devolucion->id) }}"
+                                     alt="Fotografía de evidencia de entrega física"
+                                     class="w-32 h-32 sm:w-36 sm:h-36 object-cover"
+                                     loading="lazy" />
                             </div>
 
-                            <p class="text-[11px] text-slate-500 leading-relaxed font-medium">
-                                Fotografía capturada al momento del intercambio físico para constancia institucional.
+                            <div class="flex-1 space-y-2 text-center sm:text-left min-w-0">
+                                <div>
+                                    <span class="text-xs font-bold text-slate-900 block truncate max-w-full" title="{{ $devolucion->fotografia_nombre_original ?? 'evidencia_entrega.jpg' }}">
+                                        {{ $devolucion->fotografia_nombre_original ?? 'evidencia_entrega.jpg' }}
+                                    </span>
+                                    <span class="text-[11px] text-slate-400 block mt-0.5">
+                                        {{ $devolucion->fotografia_tamano_bytes ? round($devolucion->fotografia_tamano_bytes / 1024, 1) . ' KB' : 'Formato JPG/PNG' }}
+                                    </span>
+                                </div>
+
+                                <p class="text-[11px] text-slate-500 leading-relaxed font-medium">
+                                    Fotografía capturada al momento del intercambio físico para constancia institucional.
+                                </p>
+
+                                <div class="pt-1">
+                                    <a href="{{ route('devoluciones.evidencia', $devolucion->id) }}"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all shadow-2xs">
+                                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                        </svg>
+                                        <span>Ver fotografía en tamaño completo</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="p-6 rounded-2xl bg-rose-50/70 border border-rose-200/80 text-center space-y-2 text-rose-900">
+                            <svg class="w-8 h-8 mx-auto text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <p class="text-xs sm:text-sm font-bold">
+                                No fue posible cargar la evidencia
                             </p>
-
-                            <div class="pt-1">
-                                <a href="{{ route('devoluciones.evidencia', $devolucion->id) }}"
-                                   target="_blank"
-                                   rel="noopener noreferrer"
-                                   class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all shadow-2xs">
-                                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                    </svg>
-                                    <span>Ver fotografía en tamaño completo</span>
-                                </a>
-                            </div>
                         </div>
-                    </div>
+                    @endif
                 </div>
 
                 <!-- TARJETA D (DERECHA): HISTORIAL DE DECISIONES DE MODERACIÓN -->

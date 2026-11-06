@@ -306,47 +306,58 @@
                     </div>
 
                     <!-- Contenedor centrado y sin deformaciones -->
-                    <div class="flex flex-col items-center space-y-3">
-                        <div class="relative group rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 w-full max-w-[280px] aspect-square shadow-2xs">
-                            <img
-                                src="{{ route('devoluciones.evidencia', $devolucion->id) }}"
-                                alt="Evidencia de devolución"
-                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                loading="lazy"
-                            />
-                            <a href="{{ route('devoluciones.evidencia', $devolucion->id) }}"
-                               target="_blank"
-                               rel="noopener noreferrer"
-                               class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">
-                                Ver en tamaño completo
-                            </a>
-                        </div>
+                    @if ($devolucion->hasEvidenciaDisponible())
+                        <div class="flex flex-col items-center space-y-3">
+                            <div class="relative group rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 w-full max-w-[280px] aspect-square shadow-2xs">
+                                <img
+                                    src="{{ route('devoluciones.evidencia', $devolucion->id) }}"
+                                    alt="Evidencia de devolución"
+                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                    loading="lazy"
+                                />
+                                <a href="{{ route('devoluciones.evidencia', $devolucion->id) }}"
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">
+                                    Ver en tamaño completo
+                                </a>
+                            </div>
 
-                        <!-- Metadatos de la imagen -->
-                        <div class="w-full text-center space-y-1 px-1">
-                            <span class="text-xs font-bold text-slate-900 block truncate max-w-full" title="{{ $devolucion->fotografia_nombre_original ?? 'evidencia_entrega.jpg' }}">
-                                {{ $devolucion->fotografia_nombre_original ?? 'evidencia_entrega.jpg' }}
-                            </span>
-                            <span class="text-[11px] text-slate-400 block font-mono">
-                                {{ $devolucion->fotografia_tamano_bytes ? round($devolucion->fotografia_tamano_bytes / 1024, 1) . ' KB' : 'Formato JPG/PNG' }}
-                            </span>
-                        </div>
+                            <!-- Metadatos de la imagen -->
+                            <div class="w-full text-center space-y-1 px-1">
+                                <span class="text-xs font-bold text-slate-900 block truncate max-w-full" title="{{ $devolucion->fotografia_nombre_original ?? 'evidencia_entrega.jpg' }}">
+                                    {{ $devolucion->fotografia_nombre_original ?? 'evidencia_entrega.jpg' }}
+                                </span>
+                                <span class="text-[11px] text-slate-400 block font-mono">
+                                    {{ $devolucion->fotografia_tamano_bytes ? round($devolucion->fotografia_tamano_bytes / 1024, 1) . ' KB' : 'Formato JPG/PNG' }}
+                                </span>
+                            </div>
 
-                        <!-- Botón de apertura completa -->
-                        <div class="w-full pt-1">
-                            <a
-                                href="{{ route('devoluciones.evidencia', $devolucion->id) }}"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="w-full inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all shadow-2xs"
-                            >
-                                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg>
-                                <span>Ver fotografía en tamaño completo</span>
-                            </a>
+                            <!-- Botón de apertura completa -->
+                            <div class="w-full pt-1">
+                                <a
+                                    href="{{ route('devoluciones.evidencia', $devolucion->id) }}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="w-full inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all shadow-2xs"
+                                >
+                                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                    <span>Ver fotografía en tamaño completo</span>
+                                </a>
+                            </div>
                         </div>
-                    </div>
+                    @else
+                        <div class="p-6 rounded-2xl bg-rose-50/70 border border-rose-200/80 text-center space-y-2 text-rose-900">
+                            <svg class="w-8 h-8 mx-auto text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <p class="text-xs sm:text-sm font-bold">
+                                No fue posible cargar la evidencia
+                            </p>
+                        </div>
+                    @endif
                 </div>
             </div>
 
