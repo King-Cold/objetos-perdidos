@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\DevolucionReenviadaRevision;
 use App\Http\Requests\StoreDevolucionRequest;
+use App\Http\Requests\UpdateDevolucionRequest;
 use App\Models\Devolucion;
 use App\Models\Publicacion;
 use Carbon\Carbon;
@@ -111,17 +113,29 @@ class DevolucionController extends Controller
                 // Guardar en el disco privado local
                 $archivoGuardadoRuta = $foto->storeAs($rutaDirectorio, $nombreArchivo, 'local');
 
-                // 5. Crear el registro de la devolución desacoplando fecha_captura del momento de entrega (CA-05, CA-07)
-                $fechaCaptura = Carbon::now(Publicacion::TIMEZONE);
+                // 5. Crear el registro de la devolución sincronizado con el momento de entrega y captura
+                $ahoraMerida = Carbon::now(Publicacion::TIMEZONE);
+                $fechaCaptura = $ahoraMerida;
+
+                // Si no se envió fecha u hora explícita, o si se dejó automática, tomar el momento actual exacto
+                $fechaEntrega = $request->input('fecha_entrega') ?: $ahoraMerida->format('Y-m-d');
+                $horaEntrega = $request->input('hora_entrega') ?: $ahoraMerida->format('H:i:s');
+
+                // Cuando la entrega se registra para la fecha de hoy (o por omisión), sincronizar
+                // estrictamente fecha_entrega y hora_entrega con el momento exacto del envío (fecha_captura).
+                if ($fechaEntrega === $ahoraMerida->format('Y-m-d')) {
+                    $horaEntrega = $ahoraMerida->format('H:i:s');
+                }
 
                 $devolucion = Devolucion::create([
                     'publicacion_id' => $publicacion->id,
                     'user_id' => Auth::id(), // Autor responsable obtenido de la sesión (no del navegador)
                     'receptor_nombre' => $request->input('receptor_nombre'),
                     'receptor_identificador' => $request->input('receptor_identificador'),
-                    'fecha_entrega' => $request->input('fecha_entrega'),
-                    'hora_entrega' => $request->input('hora_entrega'),
+                    'fecha_entrega' => $fechaEntrega,
+                    'hora_entrega' => $horaEntrega,
                     'fecha_captura' => $fechaCaptura,
+                    'fecha_envio_revision' => $fechaCaptura,
                     'explicacion_propiedad' => $request->input('explicacion_propiedad'),
                     'fotografia_ruta' => $archivoGuardadoRuta,
                     'fotografia_nombre_original' => $foto->getClientOriginalName(),
@@ -145,6 +159,8 @@ class DevolucionController extends Controller
                     ->with('devolucion_registrada_id', $devolucion->id)
                     ->with('publicacion_folio', $publicacion->folio);
             });
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            throw $e;
         } catch (\Throwable $e) {
             // Limpieza de archivo huérfano si la transacción falló antes de persistir (CA-10)
             if ($archivoGuardadoRuta && Storage::disk('local')->exists($archivoGuardadoRuta)) {
@@ -170,7 +186,7 @@ class DevolucionController extends Controller
      */
     public function show(int|string $id): View
     {
-        $devolucion = Devolucion::with(['publicacion.user', 'user'])->findOrFail($id);
+        $devolucion = Devolucion::with(['publicacion.user', 'publicacion.decisiones.user', 'user', 'admin'])->findOrFail($id);
 
         // CA-09: Verificación de acceso
         if (! $devolucion->puedeSerConsultadaPor(Auth::user())) {
@@ -209,5 +225,173 @@ class DevolucionController extends Controller
                 'Cache-Control' => 'private, no-cache, no-store, must-revalidate',
             ]
         );
+    }
+
+    /**
+     * Muestra el formulario para corregir y reenviar la misma devolución (HU-12 / Tarea 3).
+     * Acceso exclusivo para el autor original y únicamente cuando el estado sea 'Requiere corrección'.
+     */
+    public function edit(int|string $id): View|RedirectResponse
+    {
+        $devolucion = Devolucion::with(['publicacion.user', 'publicacion.fotografias', 'user'])->findOrFail($id);
+        $publicacion = $devolucion->publicacion;
+
+        // 1. Autorización: disponible únicamente para el autor original (CA-01, HU-12 Tarea 3)
+        $autorId = $publicacion ? $publicacion->user_id : $devolucion->user_id;
+        if (Auth::id() !== $autorId) {
+            abort(403, 'No tienes permiso para modificar esta devolución.');
+        }
+
+        // 2. Comprobar que la devolución esté en estado 'Requiere corrección'
+        if ($devolucion->isAprobada()) {
+            return redirect()->route('devoluciones.show', $devolucion->id)
+                ->with('error', 'Esta devolución ya fue aprobada y no puede modificarse.');
+        }
+
+        if (! $devolucion->isRequiereCorreccion()) {
+            return redirect()->route('devoluciones.show', $devolucion->id)
+                ->with('warning', 'Esta devolución no se encuentra en estado de corrección en este momento.');
+        }
+
+        // Parámetros de fecha/hora de referencia para el formulario
+        $ahoraMerida = Carbon::now(Publicacion::TIMEZONE);
+        $maxFechaEntrega = $ahoraMerida->format('Y-m-d');
+        $maxHoraEntrega = $ahoraMerida->format('H:i');
+
+        $minFechaEntrega = null;
+        $minHoraEntrega = null;
+        if ($publicacion && $publicacion->fecha_hallazgo) {
+            $minFechaEntrega = $publicacion->fecha_hallazgo instanceof Carbon
+                ? $publicacion->fecha_hallazgo->format('Y-m-d')
+                : Carbon::parse($publicacion->fecha_hallazgo)->format('Y-m-d');
+
+            if (! empty($publicacion->hora_hallazgo)) {
+                $minHoraEntrega = substr((string) $publicacion->hora_hallazgo, 0, 5);
+            }
+        }
+
+        return view('devoluciones.edit', compact(
+            'devolucion',
+            'publicacion',
+            'maxFechaEntrega',
+            'maxHoraEntrega',
+            'minFechaEntrega',
+            'minHoraEntrega'
+        ));
+    }
+
+    /**
+     * Actualiza la misma devolución atendiendo observaciones y la reenvía a la cola de verificación (HU-12 / Tarea 3).
+     * Conserva la identidad original del registro, evento de entrega e historial administrativo.
+     */
+    public function update(UpdateDevolucionRequest $request, int|string $id): RedirectResponse
+    {
+        // 1. Verificación previa de autorización y estado
+        $devolucionPrevia = Devolucion::with('publicacion')->findOrFail($id);
+        $publicacionPrevia = $devolucionPrevia->publicacion;
+        $autorId = $publicacionPrevia ? $publicacionPrevia->user_id : $devolucionPrevia->user_id;
+
+        if (Auth::id() !== $autorId) {
+            abort(403, 'No tienes permiso para modificar esta devolución.');
+        }
+
+        if (! $devolucionPrevia->isRequiereCorreccion()) {
+            return redirect()->route('devoluciones.show', $devolucionPrevia->id)
+                ->with('error', 'Esta devolución no se encuentra en estado de corrección o ya fue resuelta.');
+        }
+
+        $archivoNuevoGuardadoRuta = null;
+        $archivoViejoAEliminar = null;
+
+        try {
+            DB::transaction(function () use ($request, $id, &$archivoNuevoGuardadoRuta, &$archivoViejoAEliminar) {
+                /** @var Devolucion $devolucion */
+                $devolucion = Devolucion::where('id', $id)->lockForUpdate()->firstOrFail();
+                $publicacion = $devolucion->publicacion;
+
+                // Revalidar autorización y estado con bloqueo pesimista
+                $autorId = $publicacion ? $publicacion->user_id : $devolucion->user_id;
+                if (Auth::id() !== $autorId) {
+                    abort(403, 'No tienes permiso para modificar esta devolución.');
+                }
+
+                if (! $devolucion->isRequiereCorreccion()) {
+                    return redirect()->route('devoluciones.show', $devolucion->id)
+                        ->with('error', 'Esta devolución no se encuentra en estado de corrección o ya fue resuelta.');
+                }
+
+                // 3. Procesar fotografía si se envió una nueva
+                if ($request->hasFile('fotografia')) {
+                    $nuevaFoto = $request->file('fotografia');
+                    $nombreArchivo = Str::uuid() . '.' . $nuevaFoto->getClientOriginalExtension();
+                    $rutaDirectorio = 'devoluciones/' . ($publicacion ? $publicacion->id : $devolucion->publicacion_id);
+
+                    // Almacenar en disco privado local
+                    $archivoNuevoGuardadoRuta = $nuevaFoto->storeAs($rutaDirectorio, $nombreArchivo, 'local');
+
+                    // Marcar archivo anterior para retirar solo tras commit exitoso
+                    if ($devolucion->fotografia_ruta && $devolucion->fotografia_ruta !== $archivoNuevoGuardadoRuta) {
+                        $archivoViejoAEliminar = $devolucion->fotografia_ruta;
+                    }
+
+                    $devolucion->fotografia_ruta = $archivoNuevoGuardadoRuta;
+                    $devolucion->fotografia_nombre_original = $nuevaFoto->getClientOriginalName();
+                    $devolucion->fotografia_mime_type = $nuevaFoto->getClientMimeType();
+                    $devolucion->fotografia_tamano_bytes = $nuevaFoto->getSize();
+                }
+
+                // 4. Actualizar campos permitidos sobre la MISMA devolución (sin duplicar ni crear otra)
+                $ahoraMerida = Carbon::now(Publicacion::TIMEZONE);
+
+                $devolucion->receptor_nombre = $request->input('receptor_nombre');
+                $devolucion->receptor_identificador = $request->input('receptor_identificador');
+                $devolucion->fecha_entrega = $request->input('fecha_entrega');
+                $devolucion->hora_entrega = $request->input('hora_entrega');
+                $devolucion->explicacion_propiedad = $request->input('explicacion_propiedad');
+                $devolucion->estado = Devolucion::ESTADO_PENDIENTE;
+                $devolucion->fecha_envio_revision = $ahoraMerida;
+                $devolucion->motivo_correccion = null; // Deja de considerarse vigente el motivo anterior
+                $devolucion->admin_id = null;
+                $devolucion->fecha_resolucion = null;
+                $devolucion->save();
+
+                // 5. Actualizar la publicación manteniéndola fuera del muro
+                if ($publicacion) {
+                    $publicacion->estado_devolucion = Devolucion::ESTADO_PENDIENTE;
+                    $publicacion->disponible = false;
+                    $publicacion->devolucion_en_proceso = true;
+                    $publicacion->save();
+                }
+
+                // 6. Despachar evento de negocio desacoplado para integración con HU-14
+                event(new DevolucionReenviadaRevision($devolucion, Auth::user()));
+            });
+
+            // 7. Eliminación física segura del archivo anterior únicamente tras commit exitoso de la transacción
+            if ($archivoViejoAEliminar && Storage::disk('local')->exists($archivoViejoAEliminar)) {
+                Storage::disk('local')->delete($archivoViejoAEliminar);
+            }
+
+            return redirect()->route('devoluciones.show', $id)
+                ->with('status', 'La devolución se corrigió y fue reenviada a verificación administrativa.');
+
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            // En caso de fallo en BD, revertir el archivo nuevo para no dejar huérfanos
+            if ($archivoNuevoGuardadoRuta && Storage::disk('local')->exists($archivoNuevoGuardadoRuta)) {
+                Storage::disk('local')->delete($archivoNuevoGuardadoRuta);
+            }
+
+            Log::error('Error al actualizar y reenviar devolución en HU-12: ' . $e->getMessage(), [
+                'devolucion_id' => $id,
+                'user_id' => Auth::id(),
+                'exception' => $e,
+            ]);
+
+            return redirect()->route('devoluciones.edit', $id)
+                ->withInput()
+                ->withErrors(['general' => 'Ocurrió un error inesperado al procesar la corrección. Intenta nuevamente.']);
+        }
     }
 }

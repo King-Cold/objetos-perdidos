@@ -158,7 +158,12 @@ class Publicacion extends Model
     public function devolucionActiva(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(Devolucion::class)
-            ->whereIn('estado', [Devolucion::ESTADO_PENDIENTE, Devolucion::ESTADO_VERIFICADA])
+            ->whereIn('estado', [
+                Devolucion::ESTADO_PENDIENTE, 
+                Devolucion::ESTADO_VERIFICADA,
+                'Aprobada',
+                Devolucion::ESTADO_REQUIERE_CORRECCION,
+            ])
             ->latestOfMany();
     }
 

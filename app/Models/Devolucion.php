@@ -13,18 +13,24 @@ class Devolucion extends Model
 
     public const ESTADO_PENDIENTE = 'Pendiente de verificación';
     public const ESTADO_VERIFICADA = 'Verificada';
+    public const ESTADO_APROBADA = 'Aprobada';
+    public const ESTADO_REQUIERE_CORRECCION = 'Requiere corrección';
 
     protected $table = 'devoluciones';
 
     protected $fillable = [
         'publicacion_id',
         'user_id',
+        'admin_id',
         'receptor_nombre',
         'receptor_identificador',
         'fecha_entrega',
         'hora_entrega',
         'fecha_captura',
+        'fecha_envio_revision',
+        'fecha_resolucion',
         'explicacion_propiedad',
+        'motivo_correccion',
         'fotografia_ruta',
         'fotografia_nombre_original',
         'fotografia_mime_type',
@@ -37,8 +43,19 @@ class Devolucion extends Model
         return [
             'fecha_entrega' => 'date:Y-m-d',
             'fecha_captura' => 'datetime',
+            'fecha_envio_revision' => 'datetime',
+            'fecha_resolucion' => 'datetime',
             'fotografia_tamano_bytes' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Devolucion $devolucion) {
+            if (empty($devolucion->fecha_envio_revision)) {
+                $devolucion->fecha_envio_revision = $devolucion->fecha_captura ?? Carbon::now(Publicacion::TIMEZONE);
+            }
+        });
     }
 
     public function publicacion(): BelongsTo
@@ -49,6 +66,26 @@ class Devolucion extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'admin_id');
+    }
+
+    public function isPendiente(): bool
+    {
+        return $this->estado === self::ESTADO_PENDIENTE;
+    }
+
+    public function isAprobada(): bool
+    {
+        return in_array($this->estado, [self::ESTADO_VERIFICADA, self::ESTADO_APROBADA], true);
+    }
+
+    public function isRequiereCorreccion(): bool
+    {
+        return $this->estado === self::ESTADO_REQUIERE_CORRECCION;
     }
 
     /**
@@ -104,11 +141,62 @@ class Devolucion extends Model
             return '';
         }
 
+        $raw = $this->getRawOriginal('fecha_captura');
+        if ($raw) {
+            $formatted = Carbon::parse($raw)->format('d/m/Y • h:i a');
+            return str_replace(['am', 'pm'], ['a. m.', 'p. m.'], $formatted);
+        }
+
         $dt = $this->fecha_captura instanceof Carbon
             ? $this->fecha_captura
             : Carbon::parse($this->fecha_captura);
 
-        $formatted = $dt->timezone(Publicacion::TIMEZONE)->format('d/m/Y • h:i a');
+        $formatted = $dt->format('d/m/Y • h:i a');
         return str_replace(['am', 'pm'], ['a. m.', 'p. m.'], $formatted);
+    }
+
+    public function getFechaRevisionTextoAttribute(): string
+    {
+        $raw = $this->getRawOriginal('fecha_envio_revision') ?? $this->getRawOriginal('fecha_captura');
+        if ($raw) {
+            $formatted = Carbon::parse($raw)->format('d/m/Y • h:i a');
+            return str_replace(['am', 'pm'], ['a. m.', 'p. m.'], $formatted);
+        }
+
+        $dt = $this->fecha_envio_revision ?? $this->fecha_captura;
+        if (! $dt) {
+            return '';
+        }
+
+        $dtObj = $dt instanceof Carbon ? $dt : Carbon::parse($dt);
+        $formatted = $dtObj->format('d/m/Y • h:i a');
+        return str_replace(['am', 'pm'], ['a. m.', 'p. m.'], $formatted);
+    }
+
+    public function setFechaReenvioAttribute($value): void
+    {
+        $this->attributes['fecha_envio_revision'] = $value;
+    }
+
+    public function getFechaReenvioAttribute()
+    {
+        return $this->fecha_envio_revision;
+    }
+
+    /**
+     * Scope para devoluciones que requieren verificación administrativa en la cola (HU-12 Tarea 1).
+     * - Estado: 'Pendiente de verificación'
+     * - Excluye devoluciones aprobadas o en corrección
+     * - Excluye devoluciones clasificadas como cierre directo desde biblioteca
+     */
+    public function scopePendientesVerificacion($query)
+    {
+        return $query->where('devoluciones.estado', self::ESTADO_PENDIENTE)
+            ->whereHas('publicacion', function ($q) {
+                $q->where(function ($sub) {
+                    $sub->whereNull('situacion_resguardo')
+                        ->orWhere('situacion_resguardo', '!=', Publicacion::RESGUARDO_CONFIRMADO);
+                });
+            });
     }
 }

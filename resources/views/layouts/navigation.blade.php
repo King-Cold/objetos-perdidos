@@ -32,6 +32,10 @@
                             {{ __('Gestión de Objetos') }}
                         </x-nav-link>
 
+                        <x-nav-link :href="route('admin.devoluciones.index')" :active="request()->routeIs('admin.devoluciones.*')">
+                            {{ __('Entregas y Devoluciones') }}
+                        </x-nav-link>
+
                         <x-nav-link :href="route('muro')" :active="request()->routeIs('muro')">
                             {{ __('Muro Público') }}
                         </x-nav-link>
@@ -127,6 +131,10 @@
 
                 <x-responsive-nav-link :href="route('admin.moderacion.index')" :active="request()->routeIs('admin.moderacion.*') || request()->routeIs('admin.publicaciones')">
                     {{ __('Gestión de Objetos') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.devoluciones.index')" :active="request()->routeIs('admin.devoluciones.*')">
+                    {{ __('Entregas y Devoluciones') }}
                 </x-responsive-nav-link>
 
                 <x-responsive-nav-link :href="route('muro')" :active="request()->routeIs('muro')">

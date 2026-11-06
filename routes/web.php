@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\ModeracionReporteController;
+use App\Http\Controllers\Admin\VerificacionDevolucionController;
 use App\Http\Controllers\DevolucionController;
 use App\Http\Controllers\FotografiaController;
 use App\Http\Controllers\ProfileController;
@@ -229,6 +230,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
         return redirect()->back()->with('status', 'Devolución verificada correctamente');
     })->name('devoluciones.validar');
 
+    // Verificación y Decisión de Devoluciones Físicas (HU-12 / Tareas 1 y 2)
+    Route::get('/devoluciones', [VerificacionDevolucionController::class, 'index'])->name('admin.devoluciones.index');
+    Route::get('/devoluciones/{id}', [VerificacionDevolucionController::class, 'show'])->name('admin.devoluciones.show');
+    Route::post('/devoluciones/{id}/aprobar', [VerificacionDevolucionController::class, 'aprobar'])->name('admin.devoluciones.aprobar');
+    Route::post('/devoluciones/{id}/solicitar-correccion', [VerificacionDevolucionController::class, 'solicitarCorreccion'])->name('admin.devoluciones.solicitar-correccion');
+
     // Confirmación de recepción física en biblioteca (CA-13)
     Route::post('/recepciones/{id}/confirmar', function ($id) {
         return redirect()->back()->with('status', 'Recepción física confirmada en biblioteca');
@@ -266,6 +273,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/reportes/{id}/devolucion', [DevolucionController::class, 'store'])->name('devoluciones.store');
     Route::get('/devoluciones/{id}', [DevolucionController::class, 'show'])->name('devoluciones.show');
     Route::get('/devoluciones/{id}/evidencia', [DevolucionController::class, 'evidencia'])->name('devoluciones.evidencia');
+
+    // HU-12 Tarea 3: Corrección y reenvío de devolución física
+    Route::get('/devoluciones/{id}/editar', [DevolucionController::class, 'edit'])->name('devoluciones.edit');
+    Route::get('/devoluciones/{id}/corregir', [DevolucionController::class, 'edit']);
+    Route::match(['put', 'patch', 'post'], '/devoluciones/{id}', [DevolucionController::class, 'update'])->name('devoluciones.update');
+    Route::match(['put', 'patch', 'post'], '/devoluciones/{id}/reenviar', [DevolucionController::class, 'update']);
 
     // Perfil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

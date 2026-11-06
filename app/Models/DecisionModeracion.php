@@ -13,6 +13,8 @@ class DecisionModeracion extends Model
     public const TIPO_CORRECCION_SOLICITADA = 'correccion_solicitada';
     public const TIPO_APROBADA = 'aprobada';
     public const TIPO_CANCELADA = 'cancelada';
+    public const TIPO_DEVOLUCION_APROBADA = 'devolucion_aprobada';
+    public const TIPO_DEVOLUCION_CORRECCION = 'devolucion_correccion';
 
     protected $table = 'decisiones_moderacion';
 
@@ -46,6 +48,22 @@ class DecisionModeracion extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function getFechaDecisionTextoAttribute(): string
+    {
+        if (! $this->fecha_decision) {
+            return '';
+        }
+
+        $raw = $this->getRawOriginal('fecha_decision');
+        if ($raw) {
+            $formatted = \Carbon\Carbon::parse($raw)->format('d/m/Y • h:i a');
+            return str_replace(['am', 'pm'], ['a. m.', 'p. m.'], $formatted);
+        }
+
+        $formatted = $this->fecha_decision->format('d/m/Y • h:i a');
+        return str_replace(['am', 'pm'], ['a. m.', 'p. m.'], $formatted);
     }
 }
 

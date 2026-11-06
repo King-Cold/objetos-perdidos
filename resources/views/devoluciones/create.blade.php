@@ -160,11 +160,38 @@
                     </div>
                 </div>
 
-                {{-- CA-03, CA-05: Fecha y hora de entrega --}}
+                {{-- Fecha y hora de entrega física automática --}}
                 <div class="space-y-4 pt-2 border-t border-slate-100">
-                    <h3 class="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                        <span>2. Fecha y Hora Reales de Entrega</span>
-                    </h3>
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                            <span>2. Fecha y Hora Reales de Entrega</span>
+                        </h3>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span>Automático del sistema</span>
+                        </span>
+                    </div>
+
+                    <div class="p-4 sm:p-5 bg-emerald-50/60 rounded-2xl border border-emerald-200/90 text-xs text-emerald-950 space-y-2.5">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-emerald-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span class="font-bold text-sm">Registro simultáneo con la entrega en curso</span>
+                        </div>
+                        <p class="text-xs text-emerald-900 leading-relaxed font-medium">
+                            La fecha y la hora de entrega física se sincronizan automáticamente con el momento exacto en que envías este formulario. No tienes que ingresar fecha ni hora manualmente.
+                        </p>
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-2 pt-1 font-mono text-xs font-black text-emerald-900">
+                            <span>Momento institucional asignado al enviar:</span>
+                            <span class="bg-white px-3 py-1.5 rounded-xl border border-emerald-300 shadow-2xs inline-flex items-center gap-2 text-slate-800" id="contenedor-reloj-vivo">
+                                <svg class="w-3.5 h-3.5 text-emerald-600 animate-spin" style="animation-duration: 3s;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span id="texto-reloj-vivo">{{ now(\App\Models\Publicacion::TIMEZONE)->format('d/m/Y • h:i a') }}</span>
+                            </span>
+                        </div>
+                    </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -175,15 +202,15 @@
                                 type="date"
                                 id="fecha_entrega"
                                 name="fecha_entrega"
-                                value="{{ old('fecha_entrega') }}"
-                                class="w-full text-xs sm:text-sm rounded-xl border-slate-300 focus:border-[#691C32] focus:ring focus:ring-rose-200/50 shadow-2xs font-medium text-slate-800 @error('fecha_entrega') border-rose-500 ring-1 ring-rose-500 @enderror"
-                                required
+                                value="{{ old('fecha_entrega', now(\App\Models\Publicacion::TIMEZONE)->format('Y-m-d')) }}"
+                                class="w-full text-xs sm:text-sm rounded-xl border-slate-300 bg-slate-50 text-slate-700 font-medium cursor-default focus:border-[#691C32] focus:ring focus:ring-rose-200/50 shadow-2xs @error('fecha_entrega') border-rose-500 ring-1 ring-rose-500 @enderror"
+                                readonly
                             />
                             @error('fecha_entrega')
                                 <p class="text-xs text-rose-600 font-bold mt-1">{{ $message }}</p>
                             @else
                                 <p class="text-[11px] text-slate-400 mt-1">
-                                    No debe ser futura ni anterior a la fecha del hallazgo ({{ $publicacion->fecha_hallazgo_texto }}).
+                                    Asignada automáticamente por el sistema al momento del intercambio.
                                 </p>
                             @enderror
                         </div>
@@ -196,15 +223,15 @@
                                 type="time"
                                 id="hora_entrega"
                                 name="hora_entrega"
-                                value="{{ old('hora_entrega') }}"
-                                class="w-full text-xs sm:text-sm rounded-xl border-slate-300 focus:border-[#691C32] focus:ring focus:ring-rose-200/50 shadow-2xs font-medium text-slate-800 @error('hora_entrega') border-rose-500 ring-1 ring-rose-500 @enderror"
-                                required
+                                value="{{ old('hora_entrega', now(\App\Models\Publicacion::TIMEZONE)->format('H:i')) }}"
+                                class="w-full text-xs sm:text-sm rounded-xl border-slate-300 bg-slate-50 text-slate-700 font-medium cursor-default focus:border-[#691C32] focus:ring focus:ring-rose-200/50 shadow-2xs @error('hora_entrega') border-rose-500 ring-1 ring-rose-500 @enderror"
+                                readonly
                             />
                             @error('hora_entrega')
                                 <p class="text-xs text-rose-600 font-bold mt-1">{{ $message }}</p>
                             @else
                                 <p class="text-[11px] text-slate-400 mt-1">
-                                    Hora en que se completó físicamente el intercambio en el campus.
+                                    Se actualiza automáticamente al segundo exacto en que envías el registro.
                                 </p>
                             @enderror
                         </div>
@@ -390,6 +417,7 @@
         }
 
         function deshabilitarBotonEnvio() {
+            actualizarRelojEntrega();
             const btn = document.getElementById('btn-submit-devolucion');
             if (btn) {
                 btn.disabled = true;
@@ -403,6 +431,30 @@
                 `;
             }
         }
+
+        function actualizarRelojEntrega() {
+            const el = document.getElementById('texto-reloj-vivo');
+            const fechaInput = document.getElementById('fecha_entrega');
+            const horaInput = document.getElementById('hora_entrega');
+            if (el) {
+                const now = new Date();
+                const dia = String(now.getDate()).padStart(2, '0');
+                const mes = String(now.getMonth() + 1).padStart(2, '0');
+                const anio = now.getFullYear();
+                let horas = now.getHours();
+                const minutos = String(now.getMinutes()).padStart(2, '0');
+                const ampm = horas >= 12 ? 'p. m.' : 'a. m.';
+                horas = horas % 12;
+                horas = horas ? horas : 12;
+                const horasStr = String(horas).padStart(2, '0');
+                el.textContent = `${dia}/${mes}/${anio} • ${horasStr}:${minutos} ${ampm}`;
+
+                if (fechaInput) fechaInput.value = `${anio}-${mes}-${dia}`;
+                if (horaInput) horaInput.value = `${String(now.getHours()).padStart(2, '0')}:${minutos}`;
+            }
+        }
+        setInterval(actualizarRelojEntrega, 1000);
+        actualizarRelojEntrega();
     </script>
 </x-app-layout>
 

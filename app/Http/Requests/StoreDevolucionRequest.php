@@ -22,6 +22,16 @@ class StoreDevolucionRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $ahoraMerida = Carbon::now(Publicacion::TIMEZONE);
+
+        // Si no vienen en el request (omisión o automático), asignar fecha y hora actual del sistema
+        if (! $this->has('fecha_entrega')) {
+            $this->merge(['fecha_entrega' => $ahoraMerida->format('Y-m-d')]);
+        }
+        if (! $this->has('hora_entrega')) {
+            $this->merge(['hora_entrega' => $ahoraMerida->format('H:i')]);
+        }
+
         $this->merge([
             'receptor_nombre' => is_string($this->receptor_nombre) ? trim($this->receptor_nombre) : $this->receptor_nombre,
             'receptor_identificador' => is_string($this->receptor_identificador) ? trim($this->receptor_identificador) : $this->receptor_identificador,

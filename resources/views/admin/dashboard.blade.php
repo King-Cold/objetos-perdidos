@@ -84,7 +84,7 @@
                     </span>
                 </div>
 
-                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between hover:border-emerald-500/40 transition-colors">
                     <div>
                         <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-3">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,11 +92,11 @@
                             </svg>
                         </div>
                         <h4 class="text-sm font-bold text-slate-900 mb-1">Entregas y Devoluciones</h4>
-                        <p class="text-xs text-slate-500 mb-4">Confirmar actas y validar entrega al propietario legítimo.</p>
+                        <p class="text-xs text-slate-500 mb-4">Revisar y verificar devoluciones físicas documentadas por los autores.</p>
                     </div>
-                    <span class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-semibold">
-                        Módulo activo
-                    </span>
+                    <a href="{{ route('admin.devoluciones.index') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-colors shadow-xs">
+                        Revisar Devoluciones
+                    </a>
                 </div>
             </div>
         </div>

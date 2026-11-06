@@ -118,7 +118,11 @@
                                         {{ $rep->folio }}
                                     </span>
 
-                                    @if ($rep->devolucion_en_proceso || $rep->estado_devolucion === 'Pendiente de verificación')
+                                    @if ($rep->estado_devolucion === 'Requiere corrección')
+                                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-orange-50 text-orange-900 border border-orange-300 ring-1 ring-orange-200">
+                                            Requiere corrección
+                                        </span>
+                                    @elseif ($rep->devolucion_en_proceso || $rep->estado_devolucion === 'Pendiente de verificación')
                                         <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-900 border border-amber-300 ring-1 ring-amber-200">
                                             Pendiente de verificación
                                         </span>
@@ -321,6 +325,13 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                         <span>Registrar devolución</span>
+                                    </a>
+                                @elseif ($rep->devolucionActiva && $rep->devolucionActiva->isRequiereCorreccion())
+                                    <a href="{{ route('devoluciones.edit', $rep->devolucionActiva->id) }}" class="inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white text-xs font-bold transition-all shadow-2xs">
+                                        <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                        <span>Corregir devolución</span>
                                     </a>
                                 @elseif ($rep->devolucionActiva)
                                     <a href="{{ route('devoluciones.show', $rep->devolucionActiva->id) }}" class="inline-flex items-center justify-center gap-1.5 w-full py-1.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all shadow-2xs">
