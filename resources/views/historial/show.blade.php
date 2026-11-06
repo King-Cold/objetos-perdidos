@@ -215,84 +215,116 @@
                     </div>
                 </div>
 
-                {{-- Contenido de eventos cronológicos --}}
+                {{-- Contenido de eventos cronológicos ascendentes (HU-13 / Tarea 2) --}}
                 <div class="p-5 sm:p-6">
-                    <div class="relative pl-6 sm:pl-8 border-l-2 border-slate-200 space-y-6">
+                    @if (isset($eventos) && $eventos->isNotEmpty())
+                        <div class="relative pl-6 sm:pl-8 border-l-2 border-slate-200 space-y-6" id="linea-tiempo-eventos">
+                            @foreach ($eventos as $index => $ev)
+                                @php
+                                    $color = $ev['color'] ?? 'slate';
+                                    $dotBg = match($color) {
+                                        'wine' => 'bg-[#691C32]',
+                                        'emerald' => 'bg-emerald-600',
+                                        'amber' => 'bg-amber-500',
+                                        'blue' => 'bg-blue-600',
+                                        'orange' => 'bg-orange-500',
+                                        'rose' => 'bg-rose-600',
+                                        default => 'bg-slate-500',
+                                    };
+                                    $ringBg = match($color) {
+                                        'wine' => 'ring-rose-100',
+                                        'emerald' => 'ring-emerald-100',
+                                        'amber' => 'ring-amber-100',
+                                        'blue' => 'ring-blue-100',
+                                        'orange' => 'ring-orange-100',
+                                        'rose' => 'ring-rose-100',
+                                        default => 'ring-slate-100',
+                                    };
+                                    $badgeClass = match($color) {
+                                        'wine' => 'bg-rose-100 text-[#691C32] border-rose-200',
+                                        'emerald' => 'bg-emerald-100 text-emerald-900 border-emerald-300',
+                                        'amber' => 'bg-amber-100 text-amber-900 border-amber-300',
+                                        'blue' => 'bg-blue-100 text-blue-900 border-blue-300',
+                                        'orange' => 'bg-orange-100 text-orange-900 border-orange-300',
+                                        'rose' => 'bg-rose-100 text-rose-900 border-rose-300',
+                                        default => 'bg-slate-100 text-slate-800 border-slate-300',
+                                    };
+                                    $cardBg = match($color) {
+                                        'wine' => 'bg-gradient-to-r from-rose-50/50 to-white border-rose-200/80',
+                                        'emerald' => 'bg-gradient-to-r from-emerald-50/40 to-white border-emerald-200/80',
+                                        'amber' => 'bg-gradient-to-r from-amber-50/40 to-white border-amber-200/80',
+                                        'blue' => 'bg-gradient-to-r from-blue-50/40 to-white border-blue-200/80',
+                                        'orange' => 'bg-gradient-to-r from-orange-50/40 to-white border-orange-200/80',
+                                        'rose' => 'bg-gradient-to-r from-rose-50/50 to-white border-rose-200/90',
+                                        default => 'bg-gradient-to-r from-slate-50/60 to-white border-slate-200/80',
+                                    };
+                                @endphp
 
-                        {{-- Evento base de creación del reporte --}}
-                        <div class="relative">
-                            <span class="absolute -left-[31px] sm:-left-[39px] top-1 w-4 h-4 rounded-full bg-[#691C32] ring-4 ring-rose-50 flex items-center justify-center">
-                                <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
-                            </span>
-                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1">
-                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs">
-                                    <span class="font-bold text-slate-900">
-                                        Creación del reporte
-                                    </span>
-                                    <span class="text-slate-500 font-mono text-[11px]">
-                                        {{ $publicacion->fecha_captura ? $publicacion->fecha_captura->format('d/m/Y H:i') : ($publicacion->created_at ? $publicacion->created_at->format('d/m/Y H:i') : 'Fecha registrada') }}
-                                    </span>
-                                </div>
-                                <p class="text-xs text-slate-600">
-                                    Reporte registrado por <strong class="text-slate-800">{{ $publicacion->user->name ?? 'Autor' }}</strong> con folio único <strong>{{ $publicacion->folio }}</strong>.
-                                </p>
-                            </div>
-                        </div>
-
-                        {{-- Eventos de decisiones de moderación registradas (si existen) --}}
-                        @if ($publicacion->decisiones && $publicacion->decisiones->isNotEmpty())
-                            @foreach ($publicacion->decisiones->sortBy('created_at') as $decision)
-                                <div class="relative">
-                                    <span class="absolute -left-[31px] sm:-left-[39px] top-1 w-4 h-4 rounded-full bg-amber-500 ring-4 ring-amber-50 flex items-center justify-center">
+                                <div class="relative group evento-item" data-tipo="{{ $ev['tipo'] }}" data-index="{{ $index }}">
+                                    {{-- Nodo de la línea de tiempo --}}
+                                    <span class="absolute -left-[31px] sm:-left-[39px] top-1.5 w-4 h-4 rounded-full {{ $dotBg }} ring-4 {{ $ringBg }} flex items-center justify-center shadow-xs transition-transform group-hover:scale-110">
                                         <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
                                     </span>
-                                    <div class="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/70 space-y-1">
-                                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs">
-                                            <span class="font-bold text-amber-950">
-                                                Decisión: {{ $decision->tipo_decision === 'correccion_solicitada' ? 'Corrección solicitada' : ucfirst($decision->tipo_decision) }}
-                                            </span>
-                                            <span class="text-amber-800/80 font-mono text-[11px]">
-                                                {{ $decision->fecha_decision ? $decision->fecha_decision->format('d/m/Y H:i') : $decision->created_at->format('d/m/Y H:i') }}
-                                            </span>
+
+                                    {{-- Tarjeta del evento --}}
+                                    <div class="p-4 sm:p-5 rounded-2xl border {{ $cardBg }} shadow-2xs space-y-2.5">
+                                        {{-- Fila superior: Tipo de evento e Indicador temporal (Fecha y Hora) --}}
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 pb-2 border-b border-slate-100/80">
+                                            <div class="flex items-center gap-2">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border {{ $badgeClass }}">
+                                                    {{ $ev['tipo'] }}
+                                                </span>
+                                                <span class="text-[11px] font-semibold text-slate-400">
+                                                    Evento #{{ $index + 1 }}
+                                                </span>
+                                            </div>
+
+                                            <div class="flex items-center gap-1.5 text-xs text-slate-600 font-mono">
+                                                <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <span class="font-bold text-slate-800">{{ $ev['fecha_hora_texto'] }}</span>
+                                            </div>
                                         </div>
-                                        <p class="text-xs text-slate-700">
-                                            Responsable: <strong class="text-slate-900">{{ $decision->user->name ?? 'Administrador/bibliotecario' }}</strong>
-                                        </p>
-                                        @if ($decision->motivo)
-                                            <p class="text-xs text-slate-600 italic mt-1">
-                                                Motivo: "{{ $decision->motivo }}"
-                                            </p>
+
+                                        {{-- Fila intermedia: Responsable del evento --}}
+                                        <div class="flex items-center gap-2 text-xs">
+                                            <div class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-[10px] font-bold shrink-0">
+                                                {{ strtoupper(substr($ev['responsable'], 0, 1)) }}
+                                            </div>
+                                            <div class="flex items-baseline gap-1.5 min-w-0">
+                                                <span class="text-slate-400 font-medium shrink-0">Responsable:</span>
+                                                <strong class="text-slate-900 font-bold truncate">{{ $ev['responsable'] }}</strong>
+                                            </div>
+                                        </div>
+
+                                        {{-- Fila inferior: Motivo u observación autorizada --}}
+                                        @if (! empty($ev['motivo']))
+                                            <div class="mt-1.5 p-3 rounded-xl bg-white/90 border border-slate-200/70 text-xs text-slate-700 leading-relaxed shadow-2xs">
+                                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                                                    Motivo u observación:
+                                                </span>
+                                                <p class="font-medium text-slate-800 whitespace-pre-line">
+                                                    {{ $ev['motivo'] }}
+                                                </p>
+                                            </div>
                                         @endif
                                     </div>
                                 </div>
                             @endforeach
-                        @endif
-
-                        {{-- Eventos de devoluciones registradas (si existen) --}}
-                        @if ($publicacion->devoluciones && $publicacion->devoluciones->isNotEmpty())
-                            @foreach ($publicacion->devoluciones->sortBy('created_at') as $dev)
-                                <div class="relative">
-                                    <span class="absolute -left-[31px] sm:-left-[39px] top-1 w-4 h-4 rounded-full bg-emerald-600 ring-4 ring-emerald-50 flex items-center justify-center">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
-                                    </span>
-                                    <div class="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-200/70 space-y-1">
-                                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs">
-                                            <span class="font-bold text-emerald-950">
-                                                Entrega / Devolución física registrada
-                                            </span>
-                                            <span class="text-emerald-800/80 font-mono text-[11px]">
-                                                {{ $dev->fecha_captura ? $dev->fecha_captura->format('d/m/Y H:i') : $dev->created_at->format('d/m/Y H:i') }}
-                                            </span>
-                                        </div>
-                                        <p class="text-xs text-slate-700">
-                                            Estado de entrega: <strong class="text-slate-900">{{ $dev->estado }}</strong>
-                                        </p>
-                                    </div>
-                                </div>
-                            @endforeach
-                        @endif
-
-                    </div>
+                        </div>
+                    @else
+                        {{-- Estado vacío de eventos --}}
+                        <div class="py-12 px-6 text-center">
+                            <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h4 class="text-sm font-bold text-slate-800">No se encontraron eventos registrados</h4>
+                            <p class="text-xs text-slate-500 mt-0.5">No hay antecedentes disponibles para este objeto en este momento.</p>
+                        </div>
+                    @endif
                 </div>
             </section>
 

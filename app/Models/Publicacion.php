@@ -721,4 +721,343 @@ class Publicacion extends Model
 
         return true;
     }
+
+    /**
+     * Obtiene el listado completo de eventos históricos del objeto en orden cronológico ascendente.
+     * Incluye creación, aprobación, corrección, cancelación, vencimiento, recepción, devolución e incidencia.
+     *
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    public function getEventosHistorial(): \Illuminate\Support\Collection
+    {
+        $eventos = collect();
+
+        // 1. EVENTO: CREACIÓN
+        $fechaCreacion = $this->fecha_captura ?? $this->created_at ?? Carbon::now(self::TIMEZONE);
+        if (! $fechaCreacion instanceof Carbon) {
+            $fechaCreacion = Carbon::parse($fechaCreacion, self::TIMEZONE);
+        }
+
+        $eventos->push([
+            'tipo' => 'Creación',
+            'tipo_slug' => 'creacion',
+            'fecha' => $fechaCreacion,
+            'fecha_hora_texto' => $this->formatearFechaHora($fechaCreacion),
+            'responsable' => $this->user ? $this->user->name : 'Autor del reporte',
+            'motivo' => ! empty($this->descripcion)
+                ? "Registro inicial del objeto reportado por el autor con folio {$this->folio}. Descripción: {$this->descripcion}"
+                : "Registro inicial del reporte de hallazgo con folio {$this->folio}.",
+            'color' => 'wine',
+            'orden_prioridad' => 10,
+        ]);
+
+        // 2. EVENTOS: DECISIONES DE MODERACIÓN (Aprobaciones, Correcciones, Cancelaciones, Devoluciones, Incidencias)
+        $hasAprobacionEnDecisiones = false;
+        $hasCancelacionEnDecisiones = false;
+        $hasRecepcionEnDecisiones = false;
+
+        if ($this->relationLoaded('decisiones') || $this->decisiones()->exists()) {
+            foreach ($this->decisiones as $decision) {
+                $fechaDecision = $decision->fecha_decision ?? $decision->created_at ?? Carbon::now(self::TIMEZONE);
+                if (! $fechaDecision instanceof Carbon) {
+                    $fechaDecision = Carbon::parse($fechaDecision, self::TIMEZONE);
+                }
+
+                $responsableDecision = $decision->user ? $decision->user->name : 'Administrador/bibliotecario';
+                $tipoDecision = (string) $decision->tipo_decision;
+
+                if ($tipoDecision === DecisionModeracion::TIPO_APROBADA || $tipoDecision === 'aprobada') {
+                    $hasAprobacionEnDecisiones = true;
+                    $eventos->push([
+                        'tipo' => 'Aprobación',
+                        'tipo_slug' => 'aprobacion',
+                        'fecha' => $fechaDecision,
+                        'fecha_hora_texto' => $this->formatearFechaHora($fechaDecision),
+                        'responsable' => $responsableDecision,
+                        'motivo' => ! empty($decision->motivo)
+                            ? $decision->motivo
+                            : 'Publicación autorizada y vigente para el muro institucional.',
+                        'color' => 'emerald',
+                        'orden_prioridad' => 20,
+                    ]);
+                } elseif ($tipoDecision === DecisionModeracion::TIPO_CORRECCION_SOLICITADA || $tipoDecision === 'correccion_solicitada') {
+                    $eventos->push([
+                        'tipo' => 'Solicitud de corrección',
+                        'tipo_slug' => 'correccion',
+                        'fecha' => $fechaDecision,
+                        'fecha_hora_texto' => $this->formatearFechaHora($fechaDecision),
+                        'responsable' => $responsableDecision,
+                        'motivo' => ! empty($decision->motivo)
+                            ? $decision->motivo
+                            : ($this->motivo_correccion ?? 'Se requiere corrección de datos para autorizar el reporte.'),
+                        'color' => 'amber',
+                        'orden_prioridad' => 30,
+                    ]);
+                } elseif ($tipoDecision === DecisionModeracion::TIPO_CANCELADA || $tipoDecision === 'cancelada') {
+                    $hasCancelacionEnDecisiones = true;
+                    $eventos->push([
+                        'tipo' => 'Cancelación',
+                        'tipo_slug' => 'cancelacion',
+                        'fecha' => $fechaDecision,
+                        'fecha_hora_texto' => $this->formatearFechaHora($fechaDecision),
+                        'responsable' => $responsableDecision,
+                        'motivo' => ! empty($decision->motivo)
+                            ? $decision->motivo
+                            : ($this->motivo_cancelacion ?? 'Publicación cancelada administrativamente.'),
+                        'color' => 'slate',
+                        'orden_prioridad' => 70,
+                    ]);
+                } elseif ($tipoDecision === DecisionModeracion::TIPO_DEVOLUCION_APROBADA || $tipoDecision === 'devolucion_aprobada') {
+                    $eventos->push([
+                        'tipo' => 'Aprobación de devolución',
+                        'tipo_slug' => 'devolucion',
+                        'fecha' => $fechaDecision,
+                        'fecha_hora_texto' => $this->formatearFechaHora($fechaDecision),
+                        'responsable' => $responsableDecision,
+                        'motivo' => ! empty($decision->motivo)
+                            ? $decision->motivo
+                            : 'Devolución física verificada y aprobada institucionalmente.',
+                        'color' => 'emerald',
+                        'orden_prioridad' => 50,
+                    ]);
+                } elseif ($tipoDecision === DecisionModeracion::TIPO_DEVOLUCION_CORRECCION || $tipoDecision === 'devolucion_correccion') {
+                    $eventos->push([
+                        'tipo' => 'Corrección de devolución',
+                        'tipo_slug' => 'correccion',
+                        'fecha' => $fechaDecision,
+                        'fecha_hora_texto' => $this->formatearFechaHora($fechaDecision),
+                        'responsable' => $responsableDecision,
+                        'motivo' => ! empty($decision->motivo)
+                            ? $decision->motivo
+                            : 'Se solicitó corrección en la documentación o evidencia de la devolución.',
+                        'color' => 'orange',
+                        'orden_prioridad' => 55,
+                    ]);
+                } elseif (str_contains(mb_strtolower($tipoDecision), 'recepcion')) {
+                    $hasRecepcionEnDecisiones = true;
+                    $eventos->push([
+                        'tipo' => 'Recepción en biblioteca',
+                        'tipo_slug' => 'recepcion',
+                        'fecha' => $fechaDecision,
+                        'fecha_hora_texto' => $this->formatearFechaHora($fechaDecision),
+                        'responsable' => $responsableDecision,
+                        'motivo' => ! empty($decision->motivo)
+                            ? $decision->motivo
+                            : 'Objeto recibido físicamente en biblioteca bajo resguardo institucional confirmado.',
+                        'color' => 'blue',
+                        'orden_prioridad' => 35,
+                    ]);
+                } elseif (str_contains(mb_strtolower($tipoDecision), 'incidencia')) {
+                    $eventos->push([
+                        'tipo' => 'Incidencia',
+                        'tipo_slug' => 'incidencia',
+                        'fecha' => $fechaDecision,
+                        'fecha_hora_texto' => $this->formatearFechaHora($fechaDecision),
+                        'responsable' => $responsableDecision,
+                        'motivo' => ! empty($decision->motivo)
+                            ? $decision->motivo
+                            : 'Incidencia registrada en el proceso del objeto.',
+                        'color' => 'rose',
+                        'orden_prioridad' => 60,
+                    ]);
+                }
+            }
+        }
+
+        // 3. EVENTO: APROBACIÓN POR FECHA / ESTADO (si no provino de la colección de decisiones)
+        if (! $hasAprobacionEnDecisiones && ($this->fecha_primera_aprobacion || $this->fecha_aprobacion || $this->estado === self::ESTADO_APROBADA)) {
+            $fechaAprob = $this->fecha_primera_aprobacion ?? $this->fecha_aprobacion ?? $fechaCreacion->copy()->addMinutes(30);
+            if (! $fechaAprob instanceof Carbon) {
+                $fechaAprob = Carbon::parse($fechaAprob, self::TIMEZONE);
+            }
+            $eventos->push([
+                'tipo' => 'Aprobación',
+                'tipo_slug' => 'aprobacion',
+                'fecha' => $fechaAprob,
+                'fecha_hora_texto' => $this->formatearFechaHora($fechaAprob),
+                'responsable' => 'Personal de biblioteca',
+                'motivo' => 'Publicación autorizada y vigente para el muro institucional.',
+                'color' => 'emerald',
+                'orden_prioridad' => 20,
+            ]);
+        }
+
+        // 4. EVENTO: CORRECCIÓN POR ATRIBUTOS (si no provino de la colección de decisiones)
+        if ($eventos->where('tipo_slug', 'correccion')->isEmpty() && ($this->isEnCorreccion() || ! empty($this->motivo_correccion) || in_array($this->estado, [self::ESTADO_CORRECCION_SOLICITADA, self::ESTADO_REQUIERE_CORRECCION], true))) {
+            $fechaCorr = $this->updated_at ?? $fechaCreacion->copy()->addMinutes(15);
+            if (! $fechaCorr instanceof Carbon) {
+                $fechaCorr = Carbon::parse($fechaCorr, self::TIMEZONE);
+            }
+            $eventos->push([
+                'tipo' => 'Solicitud de corrección',
+                'tipo_slug' => 'correccion',
+                'fecha' => $fechaCorr,
+                'fecha_hora_texto' => $this->formatearFechaHora($fechaCorr),
+                'responsable' => 'Personal de biblioteca',
+                'motivo' => $this->motivo_correccion ?? $this->observaciones_admin ?? $this->observaciones ?? 'Se requiere corrección de datos para autorizar el reporte.',
+                'color' => 'amber',
+                'orden_prioridad' => 30,
+            ]);
+        }
+
+        // 5. EVENTO: RECEPCIÓN FÍSICA EN BIBLIOTECA
+        if (! $hasRecepcionEnDecisiones && ($this->hasRecepcionFisicaConfirmada() || $this->situacion_resguardo === self::RESGUARDO_CONFIRMADO)) {
+            $fechaRecep = $this->updated_at ?? $fechaCreacion;
+            if (! $fechaRecep instanceof Carbon) {
+                $fechaRecep = Carbon::parse($fechaRecep, self::TIMEZONE);
+            }
+            $eventos->push([
+                'tipo' => 'Recepción en biblioteca',
+                'tipo_slug' => 'recepcion',
+                'fecha' => $fechaRecep,
+                'fecha_hora_texto' => $this->formatearFechaHora($fechaRecep),
+                'responsable' => 'Personal de biblioteca',
+                'motivo' => 'Objeto entregado físicamente en biblioteca bajo resguardo institucional confirmado.',
+                'color' => 'blue',
+                'orden_prioridad' => 35,
+            ]);
+        }
+
+        // 6. EVENTO: VENCIMIENTO (si la fecha de vencimiento ya transcurrió)
+        if ($this->fecha_vencimiento) {
+            $fechaVenc = $this->fecha_vencimiento instanceof Carbon
+                ? $this->fecha_vencimiento
+                : Carbon::parse($this->fecha_vencimiento, self::TIMEZONE);
+
+            if (Carbon::now(self::TIMEZONE)->greaterThanOrEqualTo($fechaVenc)) {
+                $eventos->push([
+                    'tipo' => 'Vencimiento',
+                    'tipo_slug' => 'vencimiento',
+                    'fecha' => $fechaVenc,
+                    'fecha_hora_texto' => $this->formatearFechaHora($fechaVenc),
+                    'responsable' => 'Sistema institucional',
+                    'motivo' => 'Término del periodo ordinario de vigencia de 14 días naturales en el muro institucional.',
+                    'color' => 'slate',
+                    'orden_prioridad' => 40,
+                ]);
+            }
+        }
+
+        // 7. EVENTOS: DEVOLUCIONES FÍSICAS (cada entrega independiente)
+        if ($this->relationLoaded('devoluciones') || $this->devoluciones()->exists()) {
+            foreach ($this->devoluciones as $dev) {
+                $fechaDev = $this->obtenerFechaHoraDevolucion($dev);
+                $respDev = $dev->user ? $dev->user->name : ($this->user ? $this->user->name : 'Autor del reporte');
+
+                $partesObs = [];
+                if (! empty($dev->receptor_nombre)) {
+                    $idTxt = ! empty($dev->receptor_identificador) ? " ({$dev->receptor_identificador})" : '';
+                    $partesObs[] = "Receptor: {$dev->receptor_nombre}{$idTxt}";
+                }
+                if (! empty($dev->explicacion_propiedad)) {
+                    $partesObs[] = "Comprobación de propiedad: {$dev->explicacion_propiedad}";
+                }
+                if (! empty($dev->estado)) {
+                    $partesObs[] = "Estado de revisión: {$dev->estado}";
+                }
+                $motivoDev = ! empty($partesObs) ? implode(' • ', $partesObs) : 'Devolución física registrada.';
+
+                $eventos->push([
+                    'tipo' => 'Devolución',
+                    'tipo_slug' => 'devolucion',
+                    'fecha' => $fechaDev,
+                    'fecha_hora_texto' => $this->formatearFechaHora($fechaDev),
+                    'responsable' => $respDev,
+                    'motivo' => $motivoDev,
+                    'color' => 'emerald',
+                    'orden_prioridad' => 45,
+                    'devolucion' => $dev,
+                ]);
+            }
+        }
+
+        // 8. EVENTO: INCIDENCIA (si está abierta o registrada y no provino de decisiones)
+        if (($this->incidencia_abierta || $this->tiene_incidencia || $this->estado_devolucion === 'En incidencia') && $eventos->where('tipo_slug', 'incidencia')->isEmpty()) {
+            $fechaInc = $this->updated_at ?? Carbon::now(self::TIMEZONE);
+            if (! $fechaInc instanceof Carbon) {
+                $fechaInc = Carbon::parse($fechaInc, self::TIMEZONE);
+            }
+            $eventos->push([
+                'tipo' => 'Incidencia',
+                'tipo_slug' => 'incidencia',
+                'fecha' => $fechaInc,
+                'fecha_hora_texto' => $this->formatearFechaHora($fechaInc),
+                'responsable' => 'Personal de biblioteca / Administración',
+                'motivo' => 'Incidencia abierta: entrega física o resguardo bajo aclaración e investigación institucional.',
+                'color' => 'rose',
+                'orden_prioridad' => 60,
+            ]);
+        }
+
+        // 9. EVENTO: CANCELACIÓN DIRECTA (si no provino de decisiones)
+        if (! $hasCancelacionEnDecisiones && ($this->isCancelado() || $this->fecha_cancelacion)) {
+            $fechaCanc = $this->fecha_cancelacion ?? $this->updated_at ?? Carbon::now(self::TIMEZONE);
+            if (! $fechaCanc instanceof Carbon) {
+                $fechaCanc = Carbon::parse($fechaCanc, self::TIMEZONE);
+            }
+            $eventos->push([
+                'tipo' => 'Cancelación',
+                'tipo_slug' => 'cancelacion',
+                'fecha' => $fechaCanc,
+                'fecha_hora_texto' => $this->formatearFechaHora($fechaCanc),
+                'responsable' => $this->user ? $this->user->name : 'Autor del reporte',
+                'motivo' => ! empty($this->motivo_cancelacion)
+                    ? $this->motivo_cancelacion
+                    : 'Reporte cancelado.',
+                'color' => 'slate',
+                'orden_prioridad' => 70,
+            ]);
+        }
+
+        // Ordenamiento cronológico ascendente (del más antiguo al más reciente)
+        return $eventos->sort(function ($a, $b) {
+            $tsA = $a['fecha']->timestamp;
+            $tsB = $b['fecha']->timestamp;
+
+            if ($tsA !== $tsB) {
+                return $tsA <=> $tsB;
+            }
+
+            return ($a['orden_prioridad'] ?? 50) <=> ($b['orden_prioridad'] ?? 50);
+        })->values();
+    }
+
+    /**
+     * Formatea una fecha y hora en formato legible en español.
+     */
+    public function formatearFechaHora(Carbon $fecha): string
+    {
+        $fechaStr = $fecha->format('d/m/Y');
+        $horaRaw = $fecha->format('h:i a');
+        $horaStr = str_replace(['am', 'pm'], ['a. m.', 'p. m.'], $horaRaw);
+
+        return "{$fechaStr} • {$horaStr}";
+    }
+
+    /**
+     * Obtiene la fecha y hora precisa combinada para una devolución.
+     */
+    public function obtenerFechaHoraDevolucion(Devolucion $dev): Carbon
+    {
+        if ($dev->fecha_entrega) {
+            $fechaBase = $dev->fecha_entrega instanceof Carbon
+                ? $dev->fecha_entrega->format('Y-m-d')
+                : Carbon::parse($dev->fecha_entrega)->format('Y-m-d');
+
+            $horaStr = ! empty($dev->hora_entrega) ? (string) $dev->hora_entrega : '12:00:00';
+            try {
+                return Carbon::parse("{$fechaBase} {$horaStr}", self::TIMEZONE);
+            } catch (\Throwable $e) {
+                return Carbon::parse($fechaBase, self::TIMEZONE);
+            }
+        }
+
+        if ($dev->fecha_captura) {
+            return $dev->fecha_captura instanceof Carbon
+                ? $dev->fecha_captura
+                : Carbon::parse($dev->fecha_captura, self::TIMEZONE);
+        }
+
+        return $dev->created_at ? Carbon::parse($dev->created_at, self::TIMEZONE) : Carbon::now(self::TIMEZONE);
+    }
 }

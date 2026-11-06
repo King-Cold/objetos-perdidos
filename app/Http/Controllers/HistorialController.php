@@ -39,7 +39,10 @@ class HistorialController extends Controller
             abort(403, 'No tienes permiso para consultar el historial de este objeto.');
         }
 
-        return view('historial.show', compact('publicacion', 'isAutor', 'isAdmin'));
+        // Obtener la línea de tiempo de eventos en orden cronológico ascendente (HU-13 / Tarea 2)
+        $eventos = $publicacion->getEventosHistorial();
+
+        return view('historial.show', compact('publicacion', 'eventos', 'isAutor', 'isAdmin'));
     }
 }
 
