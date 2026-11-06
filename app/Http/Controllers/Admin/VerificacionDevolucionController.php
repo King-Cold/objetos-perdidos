@@ -33,14 +33,26 @@ class VerificacionDevolucionController extends Controller
      */
     public function index(Request $request): View
     {
-        $devoluciones = Devolucion::with(['publicacion.user', 'publicacion.fotografias', 'user'])
-            ->pendientesVerificacion()
+        $filtroEstado = $request->input('filtro', 'pendientes');
+
+        $query = Devolucion::with(['publicacion.user', 'publicacion.fotografias', 'user']);
+
+        if ($filtroEstado === 'aprobadas') {
+            $query->whereIn('devoluciones.estado', [Devolucion::ESTADO_VERIFICADA, Devolucion::ESTADO_APROBADA]);
+        } elseif ($filtroEstado === 'todas') {
+            // Mostrar tanto pendientes como aprobadas/en corrección
+        } else {
+            $query->pendientesVerificacion();
+            $filtroEstado = 'pendientes';
+        }
+
+        $devoluciones = $query
             ->orderBy(DB::raw('COALESCE(fecha_envio_revision, fecha_captura)'), 'asc')
             ->orderBy('id', 'asc')
             ->paginate(15)
             ->withQueryString();
 
-        return view('admin.devoluciones.index', compact('devoluciones'));
+        return view('admin.devoluciones.index', compact('devoluciones', 'filtroEstado'));
     }
 
     /**

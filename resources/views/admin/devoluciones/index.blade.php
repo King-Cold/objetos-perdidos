@@ -45,12 +45,36 @@
                 </div>
             @endif
 
+            <!-- Pestañas de filtrado por estado (HU-13: acceso a devoluciones aprobadas para consultar historial) -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                <div class="flex items-center gap-1 p-1.5 bg-slate-50/80 border-b border-slate-100">
+                    <a href="{{ route('admin.devoluciones.index', ['filtro' => 'pendientes']) }}"
+                       class="px-4 py-2 rounded-xl text-xs font-bold transition-all {{ ($filtroEstado ?? 'pendientes') === 'pendientes' ? 'bg-white text-tecnm-wine border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
+                        Pendientes
+                    </a>
+                    <a href="{{ route('admin.devoluciones.index', ['filtro' => 'aprobadas']) }}"
+                       class="px-4 py-2 rounded-xl text-xs font-bold transition-all {{ ($filtroEstado ?? 'pendientes') === 'aprobadas' ? 'bg-white text-emerald-700 border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
+                        Aprobadas
+                    </a>
+                    <a href="{{ route('admin.devoluciones.index', ['filtro' => 'todas']) }}"
+                       class="px-4 py-2 rounded-xl text-xs font-bold transition-all {{ ($filtroEstado ?? 'pendientes') === 'todas' ? 'bg-white text-slate-800 border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
+                        Todas
+                    </a>
+                </div>
+            </div>
+
             <!-- Contenedor Principal: Tabla Administrativa / Estado Vacío -->
             <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
                 <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gradient-to-r from-slate-50/60 to-white">
                     <div>
                         <h3 class="text-base font-bold text-slate-900">
-                            Cola de devoluciones pendientes de verificación
+                            @if (($filtroEstado ?? 'pendientes') === 'aprobadas')
+                                Devoluciones aprobadas
+                            @elseif (($filtroEstado ?? 'pendientes') === 'todas')
+                                Todas las devoluciones
+                            @else
+                                Cola de devoluciones pendientes de verificación
+                            @endif
                         </h3>
                         <p class="text-xs text-slate-500 mt-0.5">
                             Ordenadas cronológicamente desde el envío o último reenvío más antiguo para atención prioritaria.
@@ -73,10 +97,22 @@
                             </svg>
                         </div>
                         <h4 class="text-lg font-black text-slate-800 tracking-tight">
-                            No hay devoluciones pendientes de verificación
+                            @if (($filtroEstado ?? 'pendientes') === 'aprobadas')
+                                No hay devoluciones aprobadas
+                            @elseif (($filtroEstado ?? 'pendientes') === 'todas')
+                                No hay devoluciones registradas
+                            @else
+                                No hay devoluciones pendientes de verificación
+                            @endif
                         </h4>
                         <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto leading-relaxed">
-                            No existen registros de entrega física pendientes de resolución por parte del personal de biblioteca.
+                            @if (($filtroEstado ?? 'pendientes') === 'aprobadas')
+                                No existen devoluciones aprobadas hasta el momento.
+                            @elseif (($filtroEstado ?? 'pendientes') === 'todas')
+                                No existen registros de entrega física en el sistema.
+                            @else
+                                No existen registros de entrega física pendientes de resolución por parte del personal de biblioteca.
+                            @endif
                         </p>
                         <div class="mt-5">
                             <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">
@@ -137,13 +173,25 @@
 
                                         <!-- Estado -->
                                         <td class="py-4 px-4 text-center">
-                                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-50 text-amber-900 border border-amber-300">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                            @php
+                                                $estadoBg = match($dev->estado) {
+                                                    'Verificada', 'Aprobada' => 'bg-emerald-50 text-emerald-900 border-emerald-300',
+                                                    'Requiere corrección' => 'bg-orange-50 text-orange-900 border-orange-300',
+                                                    default => 'bg-amber-50 text-amber-900 border-amber-300',
+                                                };
+                                                $estadoDot = match($dev->estado) {
+                                                    'Verificada', 'Aprobada' => 'bg-emerald-500',
+                                                    'Requiere corrección' => 'bg-orange-500',
+                                                    default => 'bg-amber-500 animate-pulse',
+                                                };
+                                            @endphp
+                                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider {{ $estadoBg }} border">
+                                                <span class="w-1.5 h-1.5 rounded-full {{ $estadoDot }}"></span>
                                                 {{ $dev->estado }}
                                             </span>
                                         </td>
 
-                                        <!-- Acción: Revisar devolución -->
+                                        <!-- Acción: Revisar devolución e Historial -->
                                         <td class="py-4 px-4 sm:px-6 text-right">
                                             <a href="{{ route('admin.devoluciones.show', $dev->id) }}"
                                                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover text-white text-xs font-bold transition-colors shadow-2xs">
@@ -152,6 +200,16 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                                 </svg>
                                             </a>
+                                            <!-- Botón Ver historial del objeto (admin) -->
+                                            @if($dev->publicacion)
+                                                <a href="{{ route('admin.reportes.historial', $dev->publicacion->id) }}"
+                                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:border-[#691C32] hover:bg-rose-50/40 text-slate-700 hover:text-[#691C32] font-semibold text-xs transition-all shadow-2xs ml-2"
+                                                   title="Ver historial del objeto {{ $dev->publicacion->folio ?? ('#' . $dev->publicacion->id) }} (admin)"
+                                                >
+                                                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    <span>Historial</span>
+                                                </a>
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach
