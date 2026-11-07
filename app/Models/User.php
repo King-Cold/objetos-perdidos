@@ -80,6 +80,38 @@ class User extends Authenticatable
     }
 
     /**
+     * Avisos institucionales dirigidos al usuario (HU: Avisos / Task 1).
+     */
+    public function avisos(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Aviso::class);
+    }
+
+    /**
+     * Avisos pendientes de lectura del usuario (HU: Avisos / Task 1).
+     */
+    public function avisosNoLeidos(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Aviso::class)->where('leido', false);
+    }
+
+    /**
+     * Total de avisos pendientes de lectura.
+     */
+    public function getAvisosNoLeidosCountAttribute(): int
+    {
+        try {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('avisos')) {
+                return 0;
+            }
+
+            return $this->avisosNoLeidos()->count();
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
+    /**
      * Valida si el teléfono del usuario tiene exactamente 10 dígitos numéricos (HU-09.3).
      */
     public function hasTelefonoValido(): bool

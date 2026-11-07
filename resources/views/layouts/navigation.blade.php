@@ -36,6 +36,15 @@
                             {{ __('Entregas y Devoluciones') }}
                         </x-nav-link>
 
+                        <x-nav-link :href="route('avisos.index')" :active="request()->routeIs('avisos.*')">
+                            {{ __('Avisos') }}
+                            @if (Auth::user()->avisos_no_leidos_count > 0)
+                                <span class="ms-1.5 px-1.5 py-0.5 text-[10px] font-black rounded-full bg-rose-600 text-white">
+                                    {{ Auth::user()->avisos_no_leidos_count }}
+                                </span>
+                            @endif
+                        </x-nav-link>
+
                         <x-nav-link :href="route('muro')" :active="request()->routeIs('muro')">
                             {{ __('Muro Público') }}
                         </x-nav-link>
@@ -47,6 +56,15 @@
 
                         <x-nav-link :href="route('reportes.mis-reportes')" :active="request()->routeIs('reportes.mis-reportes')">
                             {{ __('Mis Reportes') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('avisos.index')" :active="request()->routeIs('avisos.*')">
+                            {{ __('Avisos') }}
+                            @if (Auth::user()->avisos_no_leidos_count > 0)
+                                <span class="ms-1.5 px-1.5 py-0.5 text-[10px] font-black rounded-full bg-rose-600 text-white">
+                                    {{ Auth::user()->avisos_no_leidos_count }}
+                                </span>
+                            @endif
                         </x-nav-link>
                     @endif
                 </div>
@@ -137,6 +155,15 @@
                     {{ __('Entregas y Devoluciones') }}
                 </x-responsive-nav-link>
 
+                <x-responsive-nav-link :href="route('avisos.index')" :active="request()->routeIs('avisos.*')">
+                    {{ __('Avisos') }}
+                    @if (Auth::user()->avisos_no_leidos_count > 0)
+                        <span class="ms-2 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-rose-600 text-white">
+                            {{ Auth::user()->avisos_no_leidos_count }}
+                        </span>
+                    @endif
+                </x-responsive-nav-link>
+
                 <x-responsive-nav-link :href="route('muro')" :active="request()->routeIs('muro')">
                     {{ __('Muro Público') }}
                 </x-responsive-nav-link>
@@ -147,6 +174,15 @@
 
                 <x-responsive-nav-link :href="route('reportes.mis-reportes')" :active="request()->routeIs('reportes.mis-reportes')">
                     {{ __('Mis Reportes') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('avisos.index')" :active="request()->routeIs('avisos.*')">
+                    {{ __('Avisos') }}
+                    @if (Auth::user()->avisos_no_leidos_count > 0)
+                        <span class="ms-2 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-rose-600 text-white">
+                            {{ Auth::user()->avisos_no_leidos_count }}
+                        </span>
+                    @endif
                 </x-responsive-nav-link>
             @endif
         </div>

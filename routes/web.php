@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ModeracionReporteController;
 use App\Http\Controllers\Admin\VerificacionDevolucionController;
+use App\Http\Controllers\AvisoController;
 use App\Http\Controllers\DevolucionController;
 use App\Http\Controllers\FotografiaController;
 use App\Http\Controllers\HistorialController;
@@ -292,6 +293,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Apartado privado de avisos de procesos (HU: Avisos / Task 1 y Task 2)
+    Route::get('/avisos', [AvisoController::class, 'index'])->name('avisos.index');
+    Route::match(['patch', 'post'], '/avisos/marcar-todos-leidos', [AvisoController::class, 'marcarTodosLeidos'])->name('avisos.marcar-todos-leidos');
+    Route::match(['patch', 'post'], '/avisos/leer-todos', [AvisoController::class, 'marcarTodosLeidos'])->name('avisos.leer-todos');
+    Route::match(['patch', 'post'], '/avisos/{id}/marcar-leido', [AvisoController::class, 'marcarLeido'])->name('avisos.marcar-leido');
+    Route::match(['patch', 'post'], '/avisos/{id}/leer', [AvisoController::class, 'marcarLeido'])->name('avisos.leer');
+    Route::get('/avisos/{id}/ir', [AvisoController::class, 'ir'])->name('avisos.ir');
+    Route::get('/avisos/{id}', [AvisoController::class, 'ir'])->name('avisos.show');
 });
 
 // Dashboard general (mantenido para compatibilidad de vistas previas)

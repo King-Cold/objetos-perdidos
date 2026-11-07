@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\DecisionModeracion;
 use App\Models\Publicacion;
+use App\Services\AvisoService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -135,6 +136,9 @@ class ModeracionReporteController extends Controller
                 'fecha_decision' => Carbon::now(Publicacion::TIMEZONE),
             ]);
 
+            // Generar aviso al autor (HU: Avisos - Task 3)
+            AvisoService::generarAvisoPublicacionCorreccion($reporte, $motivo);
+
             return redirect()->route('admin.moderacion.index')
                 ->with('status', "Se solicitó la corrección del reporte {$reporte->folio} exitosamente.")
                 ->with('reporte_corregido_id', $reporte->id);
@@ -204,14 +208,19 @@ class ModeracionReporteController extends Controller
 
             $reporte->save();
 
+            $motivoAprobacion = $request->filled('motivo') ? trim($request->input('motivo')) : 'Publicación autorizada y vigente para el muro institucional.';
+
             // Registrar en el historial de decisiones de moderación
             DecisionModeracion::create([
                 'publicacion_id' => $reporte->id,
                 'user_id' => Auth::id(),
                 'tipo_decision' => DecisionModeracion::TIPO_APROBADA,
-                'motivo' => $request->filled('motivo') ? trim($request->input('motivo')) : 'Publicación autorizada y vigente para el muro institucional.',
+                'motivo' => $motivoAprobacion,
                 'fecha_decision' => $ahora,
             ]);
+
+            // Generar aviso al autor (HU: Avisos - Task 3)
+            AvisoService::generarAvisoPublicacionAprobada($reporte, $motivoAprobacion);
 
             $mensaje = $request->routeIs('publicaciones.aprobar')
                 ? 'Publicación aprobada correctamente'
@@ -333,6 +342,9 @@ class ModeracionReporteController extends Controller
                 'folio_referencia_duplicado' => $folioDuplicado !== '' ? $folioDuplicado : null,
                 'fecha_decision' => $ahora,
             ]);
+
+            // Generar aviso al autor (HU: Avisos - Task 3)
+            AvisoService::generarAvisoPublicacionCancelada($reporte, $motivoCompleto);
 
             return redirect()->route('admin.moderacion.show', $reporte->id)
                 ->with('status', "La publicación {$reporte->folio} fue cancelada exitosamente.");
