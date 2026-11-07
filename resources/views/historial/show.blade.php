@@ -142,6 +142,11 @@
                                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                         <span>Disponible en el muro</span>
                                     </span>
+                                @elseif ($publicacion->isVencida())
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-300" id="dato-actual-disponibilidad">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                        <span>Expirada</span>
+                                    </span>
                                 @else
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300" id="dato-actual-disponibilidad">
                                         <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
@@ -151,14 +156,21 @@
                             </div>
                         </div>
 
-                        {{-- 5. Situación de resguardo --}}
+                        {{-- 5. Situación de resguardo y seguimiento --}}
                         <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col justify-between">
                             <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
                                 Situación de resguardo
                             </span>
-                            <span class="text-xs sm:text-sm font-bold text-slate-800 leading-snug" id="dato-actual-resguardo">
-                                {{ $publicacion->situacion_resguardo ?? \App\Models\Publicacion::RESGUARDO_AUTOR }}
-                            </span>
+                            <div class="space-y-1">
+                                <span class="text-xs sm:text-sm font-bold text-slate-800 leading-snug block" id="dato-actual-resguardo">
+                                    {{ $publicacion->situacion_resguardo ?? \App\Models\Publicacion::RESGUARDO_AUTOR }}
+                                </span>
+                                @if ($publicacion->correspondeEntregaBiblioteca())
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300" id="dato-actual-seguimiento">
+                                        <span>Pendiente de entrega a biblioteca</span>
+                                    </span>
+                                @endif
+                            </div>
                         </div>
                     </div>
 

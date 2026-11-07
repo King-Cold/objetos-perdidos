@@ -26,6 +26,19 @@ class Publicacion extends Model
 
     public const DIAS_VIGENCIA = 14;
 
+    /**
+     * Calcula la fecha límite de vigencia a partir de la primera fecha de aprobación.
+     * Suma 14 días naturales conservando la misma hora en la zona America/Merida.
+     */
+    public static function calcularFechaVencimiento(\DateTimeInterface|string $fechaPrimeraAprobacion): Carbon
+    {
+        $fecha = $fechaPrimeraAprobacion instanceof Carbon
+            ? $fechaPrimeraAprobacion->copy()->setTimezone(self::TIMEZONE)
+            : Carbon::parse($fechaPrimeraAprobacion, self::TIMEZONE);
+
+        return $fecha->addDays(self::DIAS_VIGENCIA);
+    }
+
     protected $table = 'publicaciones';
 
     protected $fillable = [
@@ -193,8 +206,155 @@ class Publicacion extends Model
             return false;
         }
 
+        $vencimiento = $this->fecha_vencimiento instanceof Carbon
+            ? $this->fecha_vencimiento->copy()->setTimezone(self::TIMEZONE)
+            : Carbon::parse($this->fecha_vencimiento, self::TIMEZONE);
+
         return Carbon::now(self::TIMEZONE)
-            ->greaterThanOrEqualTo($this->fecha_vencimiento);
+            ->greaterThanOrEqualTo($vencimiento);
+    }
+
+    /**
+     * Determina si la publicación vencida requiere entrega física a biblioteca institucional (HU-16 / Tarea 2).
+     *
+     * Criterios:
+     * 1. La publicación debe estar vencida (isVencida()).
+     * 2. El objeto continúa bajo resguardo del autor (no confirmado en biblioteca).
+     * 3. No existe una devolución activa ni confirmada:
+     *    - devolucion_en_proceso es false.
+     *    - estado_devolucion no está en 'Pendiente de verificación', 'Verificada' ni 'Devuelto'.
+     *    - no existe devolucionActiva con estado pendiente, verificada, aprobada o en corrección.
+     *    - Si hubo una devolución anterior cancelada o rechazada, se comprueba el resguardo vigente.
+     */
+    public function correspondeEntregaBiblioteca(): bool
+    {
+        if (! $this->isVencida()) {
+            return false;
+        }
+
+        // Si el objeto ya está bajo resguardo confirmado de biblioteca, no corresponde entrega pendiente
+        if ($this->hasRecepcionFisicaConfirmada() || $this->situacion_resguardo === self::RESGUARDO_CONFIRMADO) {
+            return false;
+        }
+
+        // Si ya fue devuelto o el estado general es devuelto
+        if ($this->estado === self::ESTADO_DEVUELTO || $this->estado_devolucion === 'Devuelto') {
+            return false;
+        }
+
+        // Si hay una devolución en proceso o pendiente de verificación
+        if ((bool) $this->devolucion_en_proceso) {
+            return false;
+        }
+
+        if (in_array($this->estado_devolucion, [
+            'Pendiente de verificación',
+            'Verificada',
+            'Aprobada',
+            'Requiere corrección',
+        ], true)) {
+            return false;
+        }
+
+        // Si existe relación devolucionActiva cargada o existente con estado activo
+        if ($this->relationLoaded('devolucionActiva')) {
+            if ($this->devolucionActiva !== null) {
+                return false;
+            }
+        } elseif ($this->devolucionActiva()->exists()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Obtiene la disponibilidad en texto institucional (HU-16 / Tarea 2).
+     * Muestra «Expirada» si la publicación está vencida.
+     */
+    public function getDisponibilidadTextoAttribute(): string
+    {
+        if ($this->isVencida()) {
+            return 'Expirada';
+        }
+
+        return $this->isDisponible() ? 'Disponible en el muro' : 'Fuera del muro';
+    }
+
+    /**
+     * Obtiene el seguimiento de la publicación conforme a su estado (HU-16 / Tarea 2).
+     * Muestra «Pendiente de entrega a biblioteca» cuando vence y el objeto sigue con el autor.
+     */
+    public function getSeguimientoTextoAttribute(): ?string
+    {
+        if ($this->correspondeEntregaBiblioteca()) {
+            return 'Pendiente de entrega a biblioteca';
+        }
+
+        if ((bool) $this->devolucion_en_proceso || $this->estado_devolucion === 'Pendiente de verificación') {
+            return 'Devolución en verificación';
+        }
+
+        if ($this->estado_devolucion === 'Requiere corrección') {
+            return 'Devolución en corrección';
+        }
+
+        if ($this->estado === self::ESTADO_DEVUELTO || $this->estado_devolucion === 'Devuelto' || $this->estado_devolucion === 'Verificada') {
+            return 'Devolución confirmada';
+        }
+
+        return null;
+    }
+
+    /**
+     * Plazo institucional para entrega a biblioteca posterior al vencimiento (HU-16 / Tarea 2).
+     */
+    public function getPlazoEntregaBibliotecaTextoAttribute(): string
+    {
+        return 'Dispones de dos días de atención de biblioteca posteriores al vencimiento, conforme al horario institucional, para llevar el objeto.';
+    }
+
+    /**
+     * Genera de manera idempotente el aviso interno institucional de vencimiento para el autor (HU-16 / Tarea 4).
+     *
+     * Reglas:
+     * - Genera un solo aviso por reporte y vencimiento cuando corresponde «Pendiente de entrega a biblioteca».
+     * - Incluye el plazo de dos días de atención de biblioteca posteriores al vencimiento.
+     * - Emite el evento PublicacionVencidaPendienteEntrega para integración con el bus de eventos y HU-14.
+     * - Si el mecanismo de aviso falla o lanza una excepción, esta se aísla para garantizar que
+     *   la publicación permanezca fuera de la consulta pública de forma estricta.
+     */
+    public function despacharAvisoVencimientoSiCorresponde(): bool
+    {
+        if (! $this->correspondeEntregaBiblioteca()) {
+            return false;
+        }
+
+        // Evitar avisos duplicados por ejecución repetida
+        $cacheKey = "aviso_vencimiento_enviado_publicacion_{$this->id}_{$this->fecha_vencimiento?->timestamp}";
+        if (cache()->has($cacheKey)) {
+            return false;
+        }
+
+        try {
+            if ($this->user) {
+                event(new \App\Events\PublicacionVencidaPendienteEntrega(
+                    $this,
+                    $this->user,
+                    $this->plazo_entrega_biblioteca_texto
+                ));
+            }
+            cache()->put($cacheKey, true, now()->addDays(30));
+            return true;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Fallo en la generación o despacho del aviso de vencimiento (HU-16): ' . $e->getMessage(), [
+                'publicacion_id' => $this->id,
+                'folio' => $this->folio,
+                'exception' => $e,
+            ]);
+            // Garantizar que un fallo en el mecanismo de aviso no impida la exclusión del muro ni rompa la consulta
+            return false;
+        }
     }
 
     public function hasRestriccionPublicacion(): bool
@@ -217,13 +377,14 @@ class Publicacion extends Model
 
     public function scopeDisponiblesMuro($query)
     {
-        $ahora = Carbon::now(self::TIMEZONE);
+        // En base de datos SQLite / MySQL, fecha_vencimiento se almacena en UTC según la convención del sistema
+        $ahoraUtc = Carbon::now(self::TIMEZONE)->setTimezone(config('app.timezone', 'UTC'));
 
         return $query->where('disponible', true)
             ->where('estado', self::ESTADO_APROBADA)
-            ->where(function ($q) use ($ahora) {
+            ->where(function ($q) use ($ahoraUtc) {
                 $q->whereNull('fecha_vencimiento')
-                    ->orWhere('fecha_vencimiento', '>', $ahora);
+                    ->orWhere('fecha_vencimiento', '>', $ahoraUtc);
             })
             ->where('devolucion_en_proceso', false)
             ->where('incidencia_abierta', false)
@@ -678,6 +839,11 @@ class Publicacion extends Model
             if ($this->situacion_resguardo === self::RESGUARDO_CONFIRMADO || str_contains($sit, 'confirmado')) {
                 return true;
             }
+
+            // Si explícitamente está en posesión del autor
+            if ($this->situacion_resguardo === self::RESGUARDO_AUTOR || str_contains($sit, 'posesión del autor') || str_contains($sit, 'autor')) {
+                return false;
+            }
         }
 
         return $this->isBajoResguardoBiblioteca();
@@ -969,6 +1135,21 @@ class Publicacion extends Model
                     'color' => 'slate',
                     'orden_prioridad' => 40,
                 ]);
+
+                // 6.1 EVENTO: PENDIENTE DE ENTREGA A BIBLIOTECA (HU-16 / Tarea 2)
+                // Se genera un solo evento cuando vence, sigue bajo resguardo del autor y no hay devolución activa
+                if ($this->correspondeEntregaBiblioteca()) {
+                    $eventos->push([
+                        'tipo' => 'Pendiente de entrega a biblioteca',
+                        'tipo_slug' => 'pendiente_entrega_biblioteca',
+                        'fecha' => $fechaVenc,
+                        'fecha_hora_texto' => $this->formatearFechaHora($fechaVenc),
+                        'responsable' => 'Sistema institucional',
+                        'motivo' => 'Publicación expirada. Objeto pendiente de entrega física a biblioteca institucional. ' . $this->plazo_entrega_biblioteca_texto,
+                        'color' => 'amber',
+                        'orden_prioridad' => 42,
+                    ]);
+                }
             }
         }
 

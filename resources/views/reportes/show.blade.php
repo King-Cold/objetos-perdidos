@@ -87,9 +87,19 @@
                             <span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
                                 En el muro
                             </span>
+                        @elseif ($publicacion->isVencida())
+                            <span class="px-3 py-1 rounded-full bg-rose-50 text-rose-800 text-xs font-bold border border-rose-200">
+                                Expirada
+                            </span>
                         @else
                             <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
                                 Fuera del muro
+                            </span>
+                        @endif
+
+                        @if ($publicacion->correspondeEntregaBiblioteca())
+                            <span class="px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold border border-amber-300">
+                                Pendiente de entrega a biblioteca
                             </span>
                         @endif
                     </div>
@@ -106,6 +116,21 @@
                     </div>
                 </div>
 
+                {{-- Aviso institucional de entrega a biblioteca al vencer (HU-16 / Tarea 2) --}}
+                @if ($publicacion->correspondeEntregaBiblioteca())
+                    <div class="p-4 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-950 shadow-2xs">
+                        <div class="font-extrabold flex items-center gap-2 text-amber-900 text-sm mb-1">
+                            <svg class="w-5 h-5 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <span>Pendiente de entrega a biblioteca</span>
+                        </div>
+                        <p class="leading-relaxed text-amber-900 text-xs font-medium">
+                            {{ $publicacion->plazo_entrega_biblioteca_texto }}
+                        </p>
+                    </div>
+                @endif
+
                 <!-- Cuadrícula de Información Técnica y Situación Actual -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
@@ -120,6 +145,11 @@
                         <span class="font-bold text-sm {{ $publicacion->fecha_primera_aprobacion ? 'text-slate-800' : 'text-amber-800' }}">
                             {{ $publicacion->vigencia_texto }}
                         </span>
+                        @if ($publicacion->fecha_primera_aprobacion)
+                            <span class="text-[11px] text-slate-500 block">
+                                (14 días desde su aprobación: {{ $publicacion->fecha_primera_aprobacion->timezone(\App\Models\Publicacion::TIMEZONE)->format('d/m/Y') }})
+                            </span>
+                        @endif
                     </div>
 
                     <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100 space-y-1">

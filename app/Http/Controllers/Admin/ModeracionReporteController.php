@@ -191,7 +191,7 @@ class ModeracionReporteController extends Controller
 
             if ($esPrimeraAprobacion) {
                 $reporte->fecha_primera_aprobacion = $ahora;
-                $reporte->fecha_vencimiento = $ahora->copy()->addDays(Publicacion::DIAS_VIGENCIA);
+                $reporte->fecha_vencimiento = Publicacion::calcularFechaVencimiento($ahora);
             }
 
             $reporte->fecha_aprobacion = $ahora;

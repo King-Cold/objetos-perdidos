@@ -58,7 +58,7 @@
                     </div>
 
                     <!-- Acciones e Insignia de estado (HU-13 / Acceso al historial desde moderación) -->
-                    <div class="flex items-center gap-2.5 shrink-0">
+                    <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
                         <a href="{{ route('reportes.historial', $reporte->id) }}"
                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-[#691C32] text-xs font-bold transition-all shadow-2xs">
                             <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,6 +66,18 @@
                             </svg>
                             <span>Ver historial del objeto</span>
                         </a>
+
+                        @if ($reporte->isVencida())
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-900 border border-rose-300">
+                                Expirada
+                            </span>
+                        @endif
+
+                        @if ($reporte->correspondeEntregaBiblioteca())
+                            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+                                <span>Pendiente de entrega a biblioteca</span>
+                            </span>
+                        @endif
 
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold {{ $reporte->isCancelado() ? 'bg-rose-100 text-rose-900 border border-rose-300' : ($reporte->estado === 'Aprobada' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : ($reporte->isPendienteRevision() ? 'bg-amber-100 text-amber-900 border border-amber-300' : ($reporte->isCorreccionSolicitada() ? 'bg-orange-100 text-orange-900 border border-orange-300' : 'bg-slate-100 text-slate-800'))) }}">
                             {{ $reporte->estado }}
@@ -377,6 +389,18 @@
                                     @if (! empty($reporte->user->email))
                                         <span class="text-xs text-[#64748B] block break-all">
                                             {{ $reporte->user->email }}
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <div>
+                                    <span class="text-xs font-medium text-[#64748B] block">Situación de resguardo</span>
+                                    <span class="text-xs sm:text-sm font-bold text-[#1F2937] mt-0.5 block">
+                                        {{ $reporte->situacion_resguardo ?? \App\Models\Publicacion::RESGUARDO_AUTOR }}
+                                    </span>
+                                    @if ($reporte->correspondeEntregaBiblioteca())
+                                        <span class="text-[11px] text-amber-700 font-medium block mt-0.5">
+                                            Pendiente de entrega a biblioteca (plazo institucional: 2 días de atención)
                                         </span>
                                     @endif
                                 </div>

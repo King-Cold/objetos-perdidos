@@ -37,6 +37,13 @@ class ReporteController extends Controller
             ->latest('id')
             ->get();
 
+        // HU-16 / Tarea 4: Despacha aviso de vencimiento si corresponde a los reportes vencidos del autor
+        foreach ($reportes as $rep) {
+            if ($rep->correspondeEntregaBiblioteca()) {
+                $rep->despacharAvisoVencimientoSiCorresponde();
+            }
+        }
+
         return view('reportes.mis-reportes', compact('reportes'));
     }
 
@@ -56,6 +63,11 @@ class ReporteController extends Controller
         // CT-01, CT-02: Protección estricta contra acceso de usuarios ajenos
         if ($publicacion->user_id !== Auth::id() && ! Auth::user()->isAdmin()) {
             abort(403, 'No tienes permiso para realizar esta acción');
+        }
+
+        // HU-16 / Tarea 4: Despacha aviso de vencimiento si corresponde al consultar el detalle
+        if ($publicacion->correspondeEntregaBiblioteca()) {
+            $publicacion->despacharAvisoVencimientoSiCorresponde();
         }
 
         return view('reportes.show', compact('publicacion'));

@@ -170,7 +170,7 @@
                                         @endif
                                     </div>
 
-                                    <!-- Nombre, Descripción e Indicador de Muro -->
+                                    <!-- Nombre, Descripción e Indicador de Muro y Disponibilidad -->
                                     <div class="flex-1 min-w-0">
                                         <h3 class="text-sm font-bold text-slate-900 leading-snug truncate">
                                             {{ $rep->nombre ?? $rep->titulo }}
@@ -178,16 +178,30 @@
                                         <p class="text-xs text-slate-500 line-clamp-1 mt-0.5 leading-relaxed">
                                             {{ $rep->descripcion }}
                                         </p>
-                                        <div class="mt-1">
+                                        <div class="mt-1 flex flex-wrap items-center gap-1.5">
                                             @if ($rep->isDisponible())
                                                 <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold text-emerald-700">
                                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                                     <span>Disponible en el muro</span>
                                                 </span>
+                                            @elseif ($rep->isVencida())
+                                                <span class="inline-flex items-center gap-1.5 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                                    <span>Expirada</span>
+                                                </span>
                                             @else
                                                 <span class="inline-flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
                                                     <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                                                     <span>Fuera del muro</span>
+                                                </span>
+                                            @endif
+
+                                            @if ($rep->correspondeEntregaBiblioteca())
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                                                    <svg class="w-3 h-3 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                    </svg>
+                                                    <span>Pendiente de entrega a biblioteca</span>
                                                 </span>
                                             @endif
                                         </div>
@@ -259,6 +273,21 @@
                                         </div>
                                     @endif
                                 </div>
+
+                                {{-- Aviso institucional de entrega a biblioteca al vencer (HU-16 / Tarea 2) --}}
+                                @if ($rep->correspondeEntregaBiblioteca())
+                                    <div class="mt-2 p-2.5 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-950 shadow-2xs">
+                                        <div class="font-bold flex items-center gap-1.5 text-amber-900 mb-1">
+                                            <svg class="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                            </svg>
+                                            <span class="font-extrabold">Pendiente de entrega a biblioteca</span>
+                                        </div>
+                                        <p class="leading-relaxed text-amber-900 text-[11px]">
+                                            {{ $rep->plazo_entrega_biblioteca_texto }}
+                                        </p>
+                                    </div>
+                                @endif
 
                                 <!-- Observaciones Administrativas de Biblioteca (CA-07, CA-08) -->
                                 @if ($rep->isEnCorreccion() && ($rep->motivo_correccion || $rep->observaciones_admin || $rep->observaciones))
