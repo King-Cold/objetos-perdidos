@@ -117,3 +117,92 @@ Artisan::command('reporte:mostrar-calculo {id}', function ($id) {
 
     return 0;
 })->purpose('Muestra fechas exactas de un reporte para evidenciar el cálculo');
+
+Artisan::command('devolucion:crear-ejemplo', function () {
+    $tz = \App\Models\Publicacion::TIMEZONE;
+    $ahora = \Carbon\Carbon::now($tz);
+
+    $admin = \App\Models\User::firstOrCreate(
+        ['email' => 'admin@merida.tecnm.mx'],
+        [
+            'name' => 'Administrador Institucional Biblioteca',
+            'phone' => '9999000000',
+            'password' => \Illuminate\Support\Facades\Hash::make('AdminTecNM2026!'),
+            'role' => \App\Models\User::ROLE_ADMIN,
+            'email_verified_at' => $ahora,
+        ]
+    );
+
+    $autor = \App\Models\User::firstOrCreate(
+        ['email' => 'usuario@merida.tecnm.mx'],
+        [
+            'name' => 'Usuario General Campus Poniente',
+            'phone' => '9991234567',
+            'password' => \Illuminate\Support\Facades\Hash::make('UsuarioTecNM2026!'),
+            'role' => \App\Models\User::ROLE_USUARIO_GENERAL,
+            'email_verified_at' => $ahora,
+        ]
+    );
+
+    $fechaAprobacion = $ahora->copy()->subDays(30);
+    $fechaRecepcion = $ahora->copy()->subDays(10);
+
+    $reporte = \App\Models\Publicacion::create([
+        'user_id' => $autor->id,
+        'nombre' => 'Calculadora Científica Casio fx-991CW',
+        'descripcion' => 'Calculadora científica color negro con tapa protectora, recibida bajo resguardo de biblioteca.',
+        'fecha_hallazgo' => $fechaAprobacion->copy()->subDays(2)->toDateString(),
+        'hora_hallazgo' => '10:00:00',
+        'area_zona' => 'Edificio H',
+        'lugar_hallazgo' => 'Laboratorio H-2',
+        'categoria' => 'Electrónica y Accesorios',
+        'estado' => \App\Models\Publicacion::ESTADO_APROBADA,
+        'disponible' => false,
+        'situacion_resguardo' => 'En biblioteca',
+        'devolucion_en_proceso' => false,
+        'estado_devolucion' => null,
+        'fecha_captura' => $fechaAprobacion->copy()->subDays(1),
+        'fecha_envio_revision' => $fechaAprobacion->copy()->subDays(1),
+        'fecha_primera_aprobacion' => $fechaAprobacion,
+        'fecha_aprobacion' => $fechaAprobacion,
+        'fecha_vencimiento' => $fechaAprobacion->copy()->addDays(14),
+        'version' => 1,
+    ]);
+
+    \App\Models\Fotografia::create([
+        'publicacion_id' => $reporte->id,
+        'ruta' => 'hallazgos/calculadora.jpg',
+        'nombre_original' => 'calculadora_casio.jpg',
+        'mime_type' => 'image/jpeg',
+        'tamano_bytes' => 45000,
+        'es_principal' => true,
+    ]);
+
+    \App\Models\Recepcion::create([
+        'publicacion_id' => $reporte->id,
+        'user_id' => $admin->id,
+        'fecha_recepcion' => $fechaRecepcion->toDateString(),
+        'hora_recepcion' => '11:00',
+        'fecha_captura' => $fechaRecepcion->copy()->setTime(11, 30, 0),
+        'condicion_objeto' => 'Calculadora encendiendo y en perfecto estado con tapa original.',
+        'ubicacion_resguardo' => 'Estante de Resguardo A-1, Gaveta 2',
+        'observaciones' => 'Recibida en biblioteca bajo resguardo confirmado.',
+        'confirmacion_cotejo' => true,
+        'fecha_limite_anual' => \App\Models\Recepcion::calcularFechaLimiteAnual($fechaRecepcion->toDateString(), '11:00')->toDateString(),
+    ]);
+
+    \App\Models\DecisionModeracion::create([
+        'publicacion_id' => $reporte->id,
+        'user_id' => $admin->id,
+        'tipo_decision' => \App\Models\DecisionModeracion::TIPO_RECEPCION_BIBLIOTECA,
+        'motivo' => 'Recepción física registrada en biblioteca. Ubicación: Estante de Resguardo A-1, Gaveta 2.',
+        'fecha_decision' => $fechaRecepcion,
+    ]);
+
+    $this->info("¡Objeto listo para evidenciar en tu plataforma!");
+    $this->line("ID: {$reporte->id} | Folio: {$reporte->folio}");
+    $this->line("Nombre: {$reporte->nombre}");
+    $this->line("Ubicación interna: Estante de Resguardo A-1, Gaveta 2");
+    $this->line("Puedes verlo ya en: /admin/inventario");
+    return 0;
+})->purpose('Crea un objeto listo bajo resguardo para evidenciar la devolución desde biblioteca');

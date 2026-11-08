@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\DevolucionBibliotecaController;
 use App\Http\Controllers\Admin\InventarioController;
 use App\Http\Controllers\Admin\ModeracionReporteController;
 use App\Http\Controllers\Admin\RecepcionController;
@@ -251,6 +252,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/inventario', [InventarioController::class, 'index'])->name('admin.inventario.index');
     Route::get('/inventario/{id}', [InventarioController::class, 'show'])->name('admin.inventario.show');
     Route::match(['put', 'patch', 'post'], '/inventario/{id}/ubicacion', [InventarioController::class, 'updateUbicacion'])->name('admin.inventario.update-ubicacion');
+
+    // Devolución desde biblioteca (HU: Devolución desde biblioteca / CA-01)
+    Route::get('/reportes/{id}/devolucion-biblioteca', [DevolucionBibliotecaController::class, 'create'])->name('admin.devoluciones-biblioteca.create');
+    Route::post('/reportes/{id}/devolucion-biblioteca', [DevolucionBibliotecaController::class, 'store'])->name('admin.devoluciones-biblioteca.store');
 
     // Historial del objeto desde apartados de gestión (HU-13 / Tarea 1)
     Route::get('/reportes/{id}/historial', [HistorialController::class, 'show'])->name('admin.reportes.historial');

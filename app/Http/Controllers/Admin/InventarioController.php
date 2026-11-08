@@ -26,6 +26,13 @@ class InventarioController extends Controller
             'user',
             'actualizador',
         ])
+        ->whereHas('publicacion', function ($q) {
+            $q->where('estado', '!=', Publicacion::ESTADO_DEVUELTO)
+              ->where(function ($sub) {
+                  $sub->whereNull('estado_devolucion')
+                      ->orWhereNotIn('estado_devolucion', ['Devuelto', 'Verificada']);
+              });
+        })
         ->orderBy('fecha_recepcion', 'asc')
         ->orderBy('hora_recepcion', 'asc')
         ->orderBy('id', 'asc')

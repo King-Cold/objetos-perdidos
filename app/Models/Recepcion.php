@@ -237,5 +237,17 @@ class Recepcion extends Model
     {
         return $this->belongsTo(User::class, 'actualizado_por_id');
     }
+
+    /**
+     * Comprueba si el objeto resguardado puede ser devuelto desde biblioteca (CA-01).
+     */
+    public function puedeRegistrarDevolucionDesdeBiblioteca(): bool
+    {
+        if (! $this->publicacion) {
+            return false;
+        }
+
+        return $this->publicacion->puedeRegistrarDevolucionDesdeBiblioteca();
+    }
 }
 

@@ -956,6 +956,49 @@ class Publicacion extends Model
     }
 
     /**
+     * Determina si la publicación cumple las condiciones para registrar devolución desde biblioteca (CA-01, CA-11).
+     *
+     * Condiciones:
+     * 1. Debe existir recepción física confirmada en biblioteca (hasRecepcionFisicaConfirmada() o situacion_resguardo confirmado/En biblioteca con registro de recepción).
+     * 2. El objeto debe continuar bajo resguardo de biblioteca (no haber sido devuelto ni tener salida física).
+     * 3. No debe estar devuelto (estado !== 'Devuelto' y estado_devolucion !== 'Devuelto' y estado_devolucion !== 'Verificada').
+     * 4. Aplica incluso si la publicación ha expirado o finalizó el periodo anual de resguardo.
+     */
+    public function puedeRegistrarDevolucionDesdeBiblioteca(): bool
+    {
+        // 1. Recepción física confirmada existente
+        $tieneRecepcion = $this->relationLoaded('recepcion')
+            ? $this->recepcion !== null
+            : $this->recepcion()->exists();
+
+        if (! $tieneRecepcion) {
+            return false;
+        }
+
+        // 2. Situación de resguardo confirmada o en biblioteca
+        $sit = mb_strtolower(trim((string) $this->situacion_resguardo));
+        $esEnBiblioteca = $this->situacion_resguardo === self::RESGUARDO_CONFIRMADO
+            || $this->situacion_resguardo === 'En biblioteca'
+            || str_contains($sit, 'biblioteca')
+            || str_contains($sit, 'confirmado');
+
+        if (! $esEnBiblioteca) {
+            return false;
+        }
+
+        // 3. No debe tener salida ya registrada ni estar devuelto
+        if ($this->estado === self::ESTADO_DEVUELTO) {
+            return false;
+        }
+
+        if (in_array($this->estado_devolucion, ['Devuelto', 'Verificada'], true)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Obtiene el listado completo de eventos históricos del objeto en orden cronológico ascendente.
      * Incluye creación, aprobación, corrección, cancelación, vencimiento, recepción, devolución e incidencia.
      *
@@ -1040,16 +1083,16 @@ class Publicacion extends Model
                         'color' => 'slate',
                         'orden_prioridad' => 70,
                     ]);
-                } elseif ($tipoDecision === DecisionModeracion::TIPO_DEVOLUCION_APROBADA || $tipoDecision === 'devolucion_aprobada') {
+                } elseif ($tipoDecision === DecisionModeracion::TIPO_DEVOLUCION_APROBADA || $tipoDecision === 'devolucion_aprobada' || $tipoDecision === DecisionModeracion::TIPO_DEVOLUCION_BIBLIOTECA || $tipoDecision === 'devolucion_biblioteca') {
                     $eventos->push([
-                        'tipo' => 'Aprobación de devolución',
+                        'tipo' => 'Devolución desde biblioteca',
                         'tipo_slug' => 'devolucion',
                         'fecha' => $fechaDecision,
                         'fecha_hora_texto' => $this->formatearFechaHora($fechaDecision),
                         'responsable' => $responsableDecision,
                         'motivo' => ! empty($decision->motivo)
                             ? $decision->motivo
-                            : 'Devolución física verificada y aprobada institucionalmente.',
+                            : 'Devolución física y salida del resguardo registradas directamente desde biblioteca.',
                         'color' => 'emerald',
                         'orden_prioridad' => 50,
                     ]);
