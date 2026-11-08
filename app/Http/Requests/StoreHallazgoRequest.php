@@ -151,6 +151,7 @@ class StoreHallazgoRequest extends FormRequest
             'fotografias.*' => [
                 'image',
                 'mimes:jpg,png',
+                'extensions:jpg,png',
                 'max:2048', // Máx 2MB
             ],
         ];
@@ -190,6 +191,7 @@ class StoreHallazgoRequest extends FormRequest
             'fotografias.max' => 'No puedes subir más de 5 fotografías.',
             'fotografias.*.image' => 'Cada archivo debe ser una imagen válida.',
             'fotografias.*.mimes' => 'Las fotografías deben estar en formato JPG o PNG.',
+            'fotografias.*.extensions' => 'Las fotografías deben estar en formato JPG o PNG.',
             'fotografias.*.max' => 'Cada fotografía no debe exceder los 2 MB.',
         ];
     }

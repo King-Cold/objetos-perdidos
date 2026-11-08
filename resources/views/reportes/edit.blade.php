@@ -407,7 +407,7 @@
                                 id="nuevas_fotografias"
                                 name="nuevas_fotografias[]"
                                 multiple
-                                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                                accept=".jpg,.png"
                                 @change="nuevasCount = $event.target.files.length"
                                 class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-[#691C32] file:text-white hover:file:bg-[#520B1D] file:cursor-pointer cursor-pointer border border-slate-200 rounded-xl bg-white p-1"
                             />

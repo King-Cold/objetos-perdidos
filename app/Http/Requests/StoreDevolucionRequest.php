@@ -158,7 +158,8 @@ class StoreDevolucionRequest extends FormRequest
                 'required',
                 'file',
                 'image',
-                'mimes:jpg,jpeg,png',
+                'mimes:jpg,png',
+                'extensions:jpg,png',
                 'max:2048', // 2048 KB = 2 MB
             ],
         ];
@@ -194,6 +195,7 @@ class StoreDevolucionRequest extends FormRequest
             'fotografia.file' => 'El archivo adjunto debe ser un archivo válido.',
             'fotografia.image' => 'El archivo adjunto debe ser una imagen válida.',
             'fotografia.mimes' => 'La fotografía de evidencia debe estar en formato JPG o PNG.',
+            'fotografia.extensions' => 'La fotografía de evidencia debe estar en formato JPG o PNG.',
             'fotografia.max' => 'La fotografía de evidencia no debe superar los 2 MB.',
         ];
     }

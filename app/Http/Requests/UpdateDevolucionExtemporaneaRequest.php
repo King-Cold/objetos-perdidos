@@ -197,7 +197,8 @@ class UpdateDevolucionExtemporaneaRequest extends FormRequest
                 'nullable',
                 'file',
                 'image',
-                'mimes:jpg,jpeg,png',
+                'mimes:jpg,png',
+                'extensions:jpg,png',
                 'max:2048',
             ],
         ];
@@ -221,7 +222,8 @@ class UpdateDevolucionExtemporaneaRequest extends FormRequest
             'explicacion_propiedad.required' => 'La explicación de comprobación de propiedad es obligatoria.',
             'explicacion_propiedad.min' => 'La explicación de comprobación de propiedad debe tener al menos 10 caracteres.',
             'fotografia.image' => 'El archivo seleccionado debe ser una imagen válida.',
-            'fotografia.mimes' => 'La fotografía de evidencia debe estar en formato JPG, JPEG o PNG.',
+            'fotografia.mimes' => 'La fotografía de evidencia debe estar en formato JPG o PNG.',
+            'fotografia.extensions' => 'La fotografía de evidencia debe estar en formato JPG o PNG.',
             'fotografia.max' => 'La fotografía de evidencia no debe exceder 2 MB de tamaño.',
         ];
     }

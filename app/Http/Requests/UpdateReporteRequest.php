@@ -173,6 +173,7 @@ class UpdateReporteRequest extends FormRequest
                 'file',
                 'image',
                 'mimes:jpg,png',
+                'extensions:jpg,png',
                 'max:2048', // 2048 KB = 2,097,152 bytes (CA-19)
             ],
             'foto_principal_id' => [
@@ -260,6 +261,7 @@ class UpdateReporteRequest extends FormRequest
             'nuevas_fotografias.max' => 'No puedes subir más de 5 fotografías.',
             'nuevas_fotografias.*.image' => 'Cada archivo debe ser una imagen válida.',
             'nuevas_fotografias.*.mimes' => 'Las fotografías deben estar en formato JPG o PNG.',
+            'nuevas_fotografias.*.extensions' => 'Las fotografías deben estar en formato JPG o PNG.',
             'nuevas_fotografias.*.max' => 'Cada fotografía no debe exceder los 2 MB (2,097,152 bytes).',
         ];
     }

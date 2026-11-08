@@ -299,6 +299,7 @@
                             type="file"
                             id="fotografia"
                             name="fotografia"
+                            accept=".jpg,.png"
                             class="hidden"
                             onchange="manejarVistaPrevia(event)"
                         />

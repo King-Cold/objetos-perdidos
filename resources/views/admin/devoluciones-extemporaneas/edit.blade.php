@@ -297,7 +297,7 @@
                         type="file"
                         id="fotografia"
                         name="fotografia"
-                        accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                        accept=".jpg,.png"
                         class="hidden"
                         onchange="manejarVistaPrevia(event)"
                     />
@@ -316,7 +316,7 @@
                             Haz clic aquí si deseas sustituir la fotografía de evidencia
                         </span>
                         <span class="text-[11px] text-slate-400 mt-0.5 block">
-                            JPG, JPEG o PNG de hasta 2 MB
+                            JPG o PNG de hasta 2 MB
                         </span>
                     </div>
 

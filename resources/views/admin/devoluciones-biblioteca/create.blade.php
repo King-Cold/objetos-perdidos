@@ -462,7 +462,7 @@
                             <input type="file"
                                    id="fotografia"
                                    name="fotografia"
-                                   accept=".jpg,.png,image/jpeg,image/png"
+                                   accept=".jpg,.png"
                                    class="hidden"
                                    onchange="manejarVistaPreviaBiblioteca(event)"
                                    required />

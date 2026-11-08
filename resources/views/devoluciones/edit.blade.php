@@ -291,7 +291,7 @@
                                 type="file"
                                 id="fotografia"
                                 name="fotografia"
-                                accept="image/jpeg,image/png,image/jpg"
+                                accept=".jpg,.png"
                                 class="hidden"
                                 onchange="mostrarPreviewNuevaFoto(this)"
                             />

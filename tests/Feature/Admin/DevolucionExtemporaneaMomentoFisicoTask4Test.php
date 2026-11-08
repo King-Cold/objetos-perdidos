@@ -259,5 +259,28 @@ class DevolucionExtemporaneaMomentoFisicoTask4Test extends TestCase
         $this->assertEquals(Publicacion::RESGUARDO_AUTOR, $reporte->situacion_resguardo);
         $this->assertEquals(0, Recepcion::where('publicacion_id', $reporte->id)->count());
     }
+
+    public function test_rechaza_formato_jpeg_y_solo_permite_jpg_o_png(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-05 15:30:00', Publicacion::TIMEZONE));
+        $reporte = $this->crearReporteExpirado();
+
+        // Intento con archivo .jpeg
+        $archivoJpeg = $this->crearArchivoImagen('evidencia.jpeg', 50);
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('admin.devoluciones-extemporaneas.store', $reporte->id), [
+                'motivo_registro_tardio' => 'El autor entregó en el aula.',
+                'receptor_nombre' => 'Carlos López Pérez',
+                'receptor_identificador' => '19080099',
+                'fecha_entrega' => '2026-10-25',
+                'hora_entrega' => '11:30',
+                'explicacion_propiedad' => 'El receptor presentó su credencial oficial.',
+                'fotografia' => $archivoJpeg,
+            ]);
+
+        $response->assertSessionHasErrors(['fotografia']);
+        $this->assertEquals(0, Devolucion::where('publicacion_id', $reporte->id)->count());
+    }
 }
 

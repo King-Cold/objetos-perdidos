@@ -189,12 +189,13 @@ class StoreDevolucionExtemporaneaRequest extends FormRequest
                 },
             ],
 
-            // Fotografía JPG, JPEG o PNG de hasta 2 MB
+            // Fotografía JPG o PNG de hasta 2 MB
             'fotografia' => [
                 'required',
                 'file',
                 'image',
-                'mimes:jpg,jpeg,png',
+                'mimes:jpg,png',
+                'extensions:jpg,png',
                 'max:2048',
             ],
         ];
@@ -233,7 +234,8 @@ class StoreDevolucionExtemporaneaRequest extends FormRequest
             'fotografia.required' => 'Debes adjuntar la fotografía de evidencia de la entrega.',
             'fotografia.file' => 'El archivo adjunto debe ser un archivo válido.',
             'fotografia.image' => 'El archivo adjunto debe ser una imagen válida.',
-            'fotografia.mimes' => 'La fotografía de evidencia debe estar en formato JPG, JPEG o PNG.',
+            'fotografia.mimes' => 'La fotografía de evidencia debe estar en formato JPG o PNG.',
+            'fotografia.extensions' => 'La fotografía de evidencia debe estar en formato JPG o PNG.',
             'fotografia.max' => 'La fotografía de evidencia no debe superar los 2 MB.',
         ];
     }

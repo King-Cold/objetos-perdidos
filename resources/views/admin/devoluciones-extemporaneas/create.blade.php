@@ -297,13 +297,13 @@
                         5. Fotografía de Evidencia
                     </h3>
                     <label class="block text-xs font-bold text-slate-700">
-                        Fotografía de evidencia de la entrega física (JPG, JPEG o PNG de hasta 2 MB) <span class="text-rose-600 font-black">*</span>
+                        Fotografía de evidencia de la entrega física (JPG o PNG de hasta 2 MB) <span class="text-rose-600 font-black">*</span>
                     </label>
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-1">
                         <p class="font-bold text-slate-700">Requisitos de la evidencia:</p>
                         <ul class="list-disc list-inside text-[11px] text-slate-600 space-y-0.5">
                             <li>Debe documentar la entrega física proporcionada por el autor.</li>
-                            <li>Formatos admitidos: JPG, JPEG o PNG con peso máximo de hasta 2 MB.</li>
+                            <li>Formatos admitidos: JPG o PNG con peso máximo de hasta 2 MB.</li>
                             <li>Permanece disponible únicamente para el autor original y el administrador/bibliotecario.</li>
                         </ul>
                     </div>
@@ -331,7 +331,7 @@
                             type="file"
                             id="fotografia"
                             name="fotografia"
-                            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                            accept=".jpg,.png"
                             class="hidden"
                             onchange="manejarVistaPrevia(event)"
                         />
@@ -351,7 +351,7 @@
                                 Haz clic aquí para adjuntar la fotografía de evidencia
                             </span>
                             <span class="text-[11px] text-slate-400 mt-0.5 block">
-                                Formatos JPG, JPEG o PNG de hasta 2 MB
+                                Formatos JPG o PNG de hasta 2 MB
                             </span>
                         </div>
 
