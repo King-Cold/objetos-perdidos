@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Admin\InventarioController;
 use App\Http\Controllers\Admin\ModeracionReporteController;
+use App\Http\Controllers\Admin\RecepcionController;
 use App\Http\Controllers\Admin\VerificacionDevolucionController;
 use App\Http\Controllers\AvisoController;
 use App\Http\Controllers\DevolucionController;
@@ -242,6 +244,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::post('/recepciones/{id}/confirmar', function ($id) {
         return redirect()->back()->with('status', 'Recepción física confirmada en biblioteca');
     })->name('recepciones.confirmar');
+
+    // HU-16: Resguardo de objetos no reclamados en biblioteca (Tarea 16.1, 16.2 y 16.3)
+    Route::get('/reportes/{id}/recepcion', [RecepcionController::class, 'create'])->name('admin.recepciones.create');
+    Route::post('/reportes/{id}/recepcion', [RecepcionController::class, 'store'])->name('admin.recepciones.store');
+    Route::get('/inventario', [InventarioController::class, 'index'])->name('admin.inventario.index');
+    Route::get('/inventario/{id}', [InventarioController::class, 'show'])->name('admin.inventario.show');
+    Route::match(['put', 'patch', 'post'], '/inventario/{id}/ubicacion', [InventarioController::class, 'updateUbicacion'])->name('admin.inventario.update-ubicacion');
 
     // Historial del objeto desde apartados de gestión (HU-13 / Tarea 1)
     Route::get('/reportes/{id}/historial', [HistorialController::class, 'show'])->name('admin.reportes.historial');

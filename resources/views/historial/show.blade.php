@@ -145,7 +145,7 @@
                                 @elseif ($publicacion->isVencida())
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-300" id="dato-actual-disponibilidad">
                                         <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                                        <span>Expirada</span>
+                                        <span>Expirada (Fuera del muro)</span>
                                     </span>
                                 @else
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300" id="dato-actual-disponibilidad">

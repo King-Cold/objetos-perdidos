@@ -259,6 +259,13 @@
                                         <span class="font-bold text-slate-800">{{ $rep->situacion_resguardo ?? 'En posesión del autor' }}</span>
                                     </div>
 
+                                    @if ($rep->recepcion)
+                                        <div class="flex items-center justify-between text-[11px]">
+                                            <span class="text-slate-500 font-medium">Fecha de recepción:</span>
+                                            <span class="font-semibold text-slate-700">{{ $rep->recepcion->fecha_recepcion ? $rep->recepcion->fecha_recepcion->format('d/m/Y') : '' }}</span>
+                                        </div>
+                                    @endif
+
                                     <!-- Vigencia del reporte -->
                                     <div class="flex items-center justify-between text-[11px]">
                                         <span class="text-slate-500 font-medium">Vigencia:</span>

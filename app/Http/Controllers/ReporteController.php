@@ -32,6 +32,7 @@ class ReporteController extends Controller
             'devolucionActiva',
             'devoluciones',
             'decisiones',
+            'recepcion',
         ])
             ->where('user_id', Auth::id())
             ->latest('id')
@@ -57,6 +58,7 @@ class ReporteController extends Controller
             'fotografias' => fn ($q) => $q->orderByDesc('es_principal'),
             'user',
             'devolucionActiva',
+            'recepcion',
         ])
             ->findOrFail($id);
 

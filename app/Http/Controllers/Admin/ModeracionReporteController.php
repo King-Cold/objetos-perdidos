@@ -17,24 +17,118 @@ use Illuminate\View\View;
 class ModeracionReporteController extends Controller
 {
     /**
-     * Muestra la lista de reportes de hallazgos pendientes de revisión (HU-07 / Tarea 07.1).
+     * Muestra la lista de reportes de hallazgos organizada por secciones / estados (HU-07 y HU-16).
      *
      * - Acceso exclusivo para Administrador / Bibliotecario.
-     * - Eager loading de 'user' para prevenir consultas N+1.
-     * - Ordenamiento ascendente por fecha de último envío a revisión (el más antiguo primero),
-     *   con id ascendente como criterio de desempate estable.
+     * - Pestañas de filtrado por estados (Pendientes, Activas en muro, Vencidas, Resguardo, Canceladas y Todas).
+     * - Excluye publicaciones que se encuentran en proceso activo de entrega / devolución.
      * - Paginación para escalabilidad y adaptación a dispositivos móviles.
      */
     public function index(Request $request): View
     {
-        $pendientes = Publicacion::with('user')
-            ->pendientesRevision()
-            ->orderBy('fecha_envio_revision', 'asc')
-            ->orderBy('id', 'asc')
-            ->paginate(15)
-            ->withQueryString();
+        $filtroEstado = $request->input('filtro', 'pendientes');
+        $ahora = Carbon::now(Publicacion::TIMEZONE);
 
-        return view('admin.moderacion.index', compact('pendientes'));
+        // Closure para excluir publicaciones que están en proceso activo de entrega/devolución (HU-11 / HU-12)
+        $excluirProcesoEntrega = function ($query) {
+            $query->where('devolucion_en_proceso', false)
+                  ->where(function ($q) {
+                      $q->whereNull('estado_devolucion')
+                        ->orWhereNotIn('estado_devolucion', [
+                            'Pendiente de verificación',
+                            'Requiere corrección',
+                            'Devuelto',
+                        ]);
+                  })
+                  ->whereDoesntHave('devoluciones', function ($dq) {
+                      $dq->whereIn('estado', [
+                          'Pendiente de verificación',
+                          'Requiere corrección',
+                          'Verificada',
+                          'Aprobada',
+                      ]);
+                  });
+        };
+
+        // Contadores para cada pestaña de estado
+        $qActivas = Publicacion::where('estado', Publicacion::ESTADO_APROBADA)
+            ->where('disponible', true)
+            ->where('situacion_resguardo', '!=', 'En biblioteca')
+            ->where(function ($q) use ($ahora) {
+                $q->whereNull('fecha_vencimiento')->orWhere('fecha_vencimiento', '>', $ahora);
+            });
+        $excluirProcesoEntrega($qActivas);
+
+        $qVencidas = Publicacion::where('estado', Publicacion::ESTADO_APROBADA)
+            ->where('situacion_resguardo', '!=', 'En biblioteca')
+            ->where(function ($q) use ($ahora) {
+                $q->where('disponible', false)->orWhere('fecha_vencimiento', '<=', $ahora);
+            });
+        $excluirProcesoEntrega($qVencidas);
+
+        $qResguardo = Publicacion::where('situacion_resguardo', 'En biblioteca');
+        $excluirProcesoEntrega($qResguardo);
+
+        $qCanceladas = Publicacion::whereIn('estado', [Publicacion::ESTADO_CANCELADO, 'Cancelada']);
+        $excluirProcesoEntrega($qCanceladas);
+
+        $contadores = [
+            'pendientes' => Publicacion::pendientesRevision()->count(),
+            'activas' => $qActivas->count(),
+            'vencidas' => $qVencidas->count(),
+            'resguardo' => $qResguardo->count(),
+            'canceladas' => $qCanceladas->count(),
+        ];
+        $contadores['todas'] = $contadores['pendientes'] + $contadores['activas'] + $contadores['vencidas'] + $contadores['resguardo'] + $contadores['canceladas'];
+
+        // Construcción de la consulta según el filtro seleccionado
+        $query = Publicacion::with(['user', 'fotografias']);
+
+        if ($filtroEstado === 'activas') {
+            $query->where('estado', Publicacion::ESTADO_APROBADA)
+                ->where('disponible', true)
+                ->where('situacion_resguardo', '!=', 'En biblioteca')
+                ->where(function ($q) use ($ahora) {
+                    $q->whereNull('fecha_vencimiento')->orWhere('fecha_vencimiento', '>', $ahora);
+                });
+            $excluirProcesoEntrega($query);
+            $query->orderBy('fecha_aprobacion', 'desc')->orderBy('id', 'desc');
+
+        } elseif ($filtroEstado === 'vencidas') {
+            $query->where('estado', Publicacion::ESTADO_APROBADA)
+                ->where('situacion_resguardo', '!=', 'En biblioteca')
+                ->where(function ($q) use ($ahora) {
+                    $q->where('disponible', false)->orWhere('fecha_vencimiento', '<=', $ahora);
+                });
+            $excluirProcesoEntrega($query);
+            $query->orderBy('fecha_vencimiento', 'asc')->orderBy('id', 'asc');
+
+        } elseif ($filtroEstado === 'resguardo') {
+            $query->where('situacion_resguardo', 'En biblioteca');
+            $excluirProcesoEntrega($query);
+            $query->orderBy('updated_at', 'desc')->orderBy('id', 'desc');
+
+        } elseif ($filtroEstado === 'canceladas') {
+            $query->whereIn('estado', [Publicacion::ESTADO_CANCELADO, 'Cancelada']);
+            $excluirProcesoEntrega($query);
+            $query->orderBy('fecha_cancelacion', 'desc')->orderBy('id', 'desc');
+
+        } elseif ($filtroEstado === 'todas') {
+            $query->where('estado', '!=', Publicacion::ESTADO_DEVUELTO);
+            $excluirProcesoEntrega($query);
+            $query->orderBy('created_at', 'desc')->orderBy('id', 'desc');
+
+        } else {
+            // Predeterminado: Pendientes de revisión (Requerimiento HU-07 / Tarea 07.1)
+            $filtroEstado = 'pendientes';
+            $query->pendientesRevision()
+                ->orderBy('fecha_envio_revision', 'asc')
+                ->orderBy('id', 'asc');
+        }
+
+        $pendientes = $query->paginate(15)->withQueryString();
+
+        return view('admin.moderacion.index', compact('pendientes', 'filtroEstado', 'contadores'));
     }
 
     /**

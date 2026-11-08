@@ -138,6 +138,19 @@
                         <span class="font-bold text-slate-800 text-sm">
                             {{ $publicacion->situacion_resguardo ?? 'En posesión del autor' }}
                         </span>
+                        @if ($publicacion->recepcion)
+                            <div class="pt-1.5 border-t border-slate-200/60 mt-1.5 space-y-0.5">
+                                <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800">
+                                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span>Objeto recibido en biblioteca</span>
+                                </span>
+                                <span class="text-[11px] text-slate-600 block">
+                                    Fecha de recepción: <strong>{{ $publicacion->recepcion->fecha_recepcion ? $publicacion->recepcion->fecha_recepcion->format('d/m/Y') : '' }}</strong>
+                                </span>
+                            </div>
+                        @endif
                     </div>
 
                     <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-100 space-y-1">

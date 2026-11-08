@@ -36,6 +36,10 @@
                             {{ __('Entregas y Devoluciones') }}
                         </x-nav-link>
 
+                        <x-nav-link :href="route('admin.inventario.index')" :active="request()->routeIs('admin.inventario.*')">
+                            {{ __('Inventario de Biblioteca') }}
+                        </x-nav-link>
+
                         <x-nav-link :href="route('avisos.index')" :active="request()->routeIs('avisos.*')">
                             {{ __('Avisos') }}
                             @if (Auth::user()->avisos_no_leidos_count > 0)
@@ -153,6 +157,10 @@
 
                 <x-responsive-nav-link :href="route('admin.devoluciones.index')" :active="request()->routeIs('admin.devoluciones.*')">
                     {{ __('Entregas y Devoluciones') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.inventario.index')" :active="request()->routeIs('admin.inventario.*')">
+                    {{ __('Inventario de Biblioteca') }}
                 </x-responsive-nav-link>
 
                 <x-responsive-nav-link :href="route('avisos.index')" :active="request()->routeIs('avisos.*')">

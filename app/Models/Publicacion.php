@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Publicacion extends Model
 {
@@ -168,6 +169,17 @@ class Publicacion extends Model
             ->orderBy('id', 'desc');
     }
 
+    public function recepcion(): HasOne
+    {
+        return $this->hasOne(Recepcion::class);
+    }
+
+    public function recepciones(): HasMany
+    {
+        return $this->hasMany(Recepcion::class)
+            ->orderBy('id', 'desc');
+    }
+
     public function devolucionActiva(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(Devolucion::class)
@@ -232,8 +244,12 @@ class Publicacion extends Model
             return false;
         }
 
-        // Si el objeto ya está bajo resguardo confirmado de biblioteca, no corresponde entrega pendiente
-        if ($this->hasRecepcionFisicaConfirmada() || $this->situacion_resguardo === self::RESGUARDO_CONFIRMADO) {
+        // Si el objeto ya está bajo resguardo confirmado de biblioteca o recibido, no corresponde entrega pendiente
+        if ($this->hasRecepcionFisicaConfirmada() 
+            || $this->situacion_resguardo === self::RESGUARDO_CONFIRMADO
+            || $this->situacion_resguardo === 'En biblioteca'
+            || ($this->relationLoaded('recepcion') ? $this->recepcion !== null : $this->recepcion()->exists())
+        ) {
             return false;
         }
 
@@ -265,7 +281,19 @@ class Publicacion extends Model
             return false;
         }
 
+        if ($this->devoluciones()->where('estado', '!=', 'Cancelada')->exists()) {
+            return false;
+        }
+
         return true;
+    }
+
+    /**
+     * Determina si el reporte cumple todas las condiciones para registrar recepción física por vencimiento (HU-16 / Tarea 1).
+     */
+    public function esElegibleParaRecepcionFisica(): bool
+    {
+        return $this->correspondeEntregaBiblioteca();
     }
 
     /**
@@ -740,7 +768,10 @@ class Publicacion extends Model
         // 3. Situación de resguardo físico confirmada en biblioteca
         if (
             $this->situacion_resguardo === self::RESGUARDO_CONFIRMADO
+            || $this->situacion_resguardo === 'En biblioteca'
+            || str_contains(mb_strtolower((string) $this->situacion_resguardo), 'biblioteca')
             || str_contains(mb_strtolower((string) $this->situacion_resguardo), 'confirmado')
+            || ($this->relationLoaded('recepcion') ? $this->recepcion !== null : $this->recepcion()->exists())
             || ($this->relationLoaded('decisiones')
                 ? $this->decisiones->contains(fn ($d) => str_contains(mb_strtolower((string) $d->tipo_decision), 'recepcion'))
                 : $this->decisiones()->where('tipo_decision', 'like', '%recepcion%')->exists())
@@ -840,8 +871,10 @@ class Publicacion extends Model
                 return true;
             }
 
-            // Si explícitamente está en posesión del autor
-            if ($this->situacion_resguardo === self::RESGUARDO_AUTOR || str_contains($sit, 'posesión del autor') || str_contains($sit, 'autor')) {
+            // Si explícitamente está en posesión del autor y no es un hallazgo ocurrido en biblioteca
+            if (($this->situacion_resguardo === self::RESGUARDO_AUTOR || str_contains($sit, 'posesión del autor') || str_contains($sit, 'autor'))
+                && ! $this->isBajoResguardoBiblioteca()
+            ) {
                 return false;
             }
         }
@@ -1046,6 +1079,19 @@ class Publicacion extends Model
                             : 'Objeto recibido físicamente en biblioteca bajo resguardo institucional confirmado.',
                         'color' => 'blue',
                         'orden_prioridad' => 35,
+                    ]);
+                } elseif (str_contains(mb_strtolower($tipoDecision), 'ubicacion')) {
+                    $eventos->push([
+                        'tipo' => 'Cambio de ubicación en biblioteca',
+                        'tipo_slug' => 'cambio_ubicacion',
+                        'fecha' => $fechaDecision,
+                        'fecha_hora_texto' => $this->formatearFechaHora($fechaDecision),
+                        'responsable' => $responsableDecision,
+                        'motivo' => ! empty($decision->motivo)
+                            ? $decision->motivo
+                            : 'Actualización de ubicación física de resguardo en biblioteca.',
+                        'color' => 'indigo',
+                        'orden_prioridad' => 37,
                     ]);
                 } elseif (str_contains(mb_strtolower($tipoDecision), 'incidencia')) {
                     $eventos->push([

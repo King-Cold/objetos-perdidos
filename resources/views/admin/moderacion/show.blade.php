@@ -67,6 +67,16 @@
                             <span>Ver historial del objeto</span>
                         </a>
 
+                        @if ($reporte->esElegibleParaRecepcionFisica())
+                            <a href="{{ route('admin.recepciones.create', $reporte->id) }}"
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#691C32] hover:bg-[#520B1D] text-white text-xs font-bold transition-all shadow-xs">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                                <span>Registrar recepción</span>
+                            </a>
+                        @endif
+
                         @if ($reporte->isVencida())
                             <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-900 border border-rose-300">
                                 Expirada
@@ -457,6 +467,19 @@
                             </svg>
                             <span>Aprobar publicación</span>
                         </button>
+
+                        @if ($reporte->esElegibleParaRecepcionFisica())
+                            <!-- Acción HU-16: Registrar recepción física por vencimiento -->
+                            <a href="{{ route('admin.recepciones.create', $reporte->id) }}"
+                               class="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#691C32] hover:bg-[#520B1D] active:bg-[#3B0715] text-white font-medium text-xs sm:text-[13px] shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#691C32] cursor-pointer"
+                               title="Registrar recepción física en biblioteca para el reporte {{ $reporte->folio }}"
+                               data-action="registrar-recepcion">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                                <span>Registrar recepción</span>
+                            </a>
+                        @endif
 
                         <!-- Acción Delicada: Cancelar publicación (disponible en estados compatibles) -->
                         @if ($reporte->isCancelable())
