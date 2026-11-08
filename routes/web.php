@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DevolucionBibliotecaController;
+use App\Http\Controllers\Admin\DevolucionExtemporaneaController;
 use App\Http\Controllers\Admin\IncidenciaController;
 use App\Http\Controllers\Admin\InventarioController;
 use App\Http\Controllers\Admin\ModeracionReporteController;
@@ -257,6 +258,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // Devolución desde biblioteca (HU: Devolución desde biblioteca / CA-01)
     Route::get('/reportes/{id}/devolucion-biblioteca', [DevolucionBibliotecaController::class, 'create'])->name('admin.devoluciones-biblioteca.create');
     Route::post('/reportes/{id}/devolucion-biblioteca', [DevolucionBibliotecaController::class, 'store'])->name('admin.devoluciones-biblioteca.store');
+
+    // Devolución anterior al vencimiento reportada fuera de tiempo (exclusiva para bibliotecario/administrador)
+    Route::get('/reportes/{id}/devolucion-fuera-de-tiempo', [DevolucionExtemporaneaController::class, 'create'])->name('admin.devoluciones-extemporaneas.create');
 
     // Historial del objeto desde apartados de gestión (HU-13 / Tarea 1)
     Route::get('/reportes/{id}/historial', [HistorialController::class, 'show'])->name('admin.reportes.historial');

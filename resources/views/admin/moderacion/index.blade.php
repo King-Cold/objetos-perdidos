@@ -344,8 +344,8 @@
                                         @endif
 
                                         <!-- 6. Acciones -->
-                                        <td class="py-2.5 px-2.5 sm:px-3 whitespace-nowrap text-right">
-                                            <div class="inline-flex items-center justify-end gap-1.5">
+                                        <td class="py-2.5 px-2.5 sm:px-3 text-right align-middle">
+                                            <div class="flex flex-wrap items-center justify-end gap-1.5 max-w-xs ml-auto">
                                                 <a
                                                     href="{{ route('reportes.historial', $rep->id) }}"
                                                     class="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-200 hover:border-[#691C32] hover:bg-rose-50/40 text-slate-700 hover:text-[#691C32] font-semibold text-xs transition-all shadow-2xs"
@@ -358,7 +358,7 @@
                                                 </a>
 
                                                 @if (($filtroEstado ?? 'pendientes') === 'vencidas' && $rep->esElegibleParaRecepcionFisica())
-                                                    <!-- Acción directa HU-16: Registrar recepción física -->
+                                                    <!-- Acción directa: Registrar recepción física -->
                                                     <a
                                                         href="{{ route('admin.recepciones.create', $rep->id) }}"
                                                         class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#691C32] hover:bg-[#520B1D] text-white font-bold text-xs tracking-wide shadow-2xs hover:shadow transition-all"
@@ -369,6 +369,18 @@
                                                         </svg>
                                                         <span>Registrar recepción</span>
                                                     </a>
+                                                    @if ($rep->puedeRegistrarDevolucionExtemporanea())
+                                                        <a
+                                                            href="{{ route('admin.devoluciones-extemporaneas.create', $rep->id) }}"
+                                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-800 hover:bg-amber-900 text-white font-bold text-xs tracking-wide shadow-2xs hover:shadow transition-all"
+                                                            title="Registrar devolución reportada fuera de tiempo para {{ $rep->folio }}"
+                                                        >
+                                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                            <span>Registrar devolución reportada fuera de tiempo</span>
+                                                        </a>
+                                                    @endif
                                                 @elseif (($filtroEstado ?? 'pendientes') === 'resguardo')
                                                     <!-- Acción para ir al inventario de biblioteca -->
                                                     <a

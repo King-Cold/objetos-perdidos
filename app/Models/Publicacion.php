@@ -28,6 +28,8 @@ class Publicacion extends Model
 
     public const DIAS_VIGENCIA = 14;
 
+    public const MENSAJE_ORIENTACION_ENTREGA_PREVIA_VENCIMIENTO = 'Si entregaste el objeto antes del vencimiento y no registraste la devolución, contacta a biblioteca e indica el folio del reporte.';
+
     /**
      * Calcula la fecha límite de vigencia a partir de la primera fecha de aprobación.
      * Suma 14 días naturales conservando la misma hora en la zona America/Merida.
@@ -469,6 +471,38 @@ class Publicacion extends Model
     }
 
     /**
+     * Determina si un reporte expirado cumple las condiciones para que el administrador/bibliotecario
+     * utilice la acción «Registrar devolución reportada fuera de tiempo» (CA-02):
+     * 1. El reporte debe encontrarse expirado (isVencida()) y haber estado aprobado (no cancelado ni pendiente de aprobación).
+     * 2. El objeto NO debe haber sido recibido físicamente en biblioteca.
+     * 3. No debe existir otra devolución activa, en corrección o verificada que corresponda a la misma entrega o resulte incompatible.
+     */
+    public function puedeRegistrarDevolucionExtemporanea(): bool
+    {
+        if (! $this->isVencida()) {
+            return false;
+        }
+
+        if ($this->isCancelado() || $this->isPendienteRevision() || $this->isEnCorreccion()) {
+            return false;
+        }
+
+        if ($this->estado === self::ESTADO_DEVUELTO || $this->estado_devolucion === 'Devuelto') {
+            return false;
+        }
+
+        if ((bool) $this->publicacion_excepcional_autorizada) {
+            return false;
+        }
+
+        if ((bool) $this->incidencia_abierta || (bool) $this->tiene_incidencia) {
+            return false;
+        }
+
+        return $this->correspondeEntregaBiblioteca();
+    }
+
+    /**
      * Obtiene la disponibilidad en texto institucional (HU-16 / Tarea 2).
      * Muestra «Expirada» si la publicación está vencida.
      */
@@ -516,6 +550,15 @@ class Publicacion extends Model
     public function getPlazoEntregaBibliotecaTextoAttribute(): string
     {
         return 'Dispones de dos días de atención de biblioteca posteriores al vencimiento, conforme al horario institucional, para llevar el objeto.';
+    }
+
+    /**
+     * Mensaje de orientación al autor en el seguimiento de un reporte expirado cuando entregó el objeto
+     * antes del vencimiento y no registró la devolución (CA-01).
+     */
+    public function getOrientacionEntregaPreviaVencimientoTextoAttribute(): string
+    {
+        return self::MENSAJE_ORIENTACION_ENTREGA_PREVIA_VENCIMIENTO;
     }
 
     /**
@@ -1468,7 +1511,7 @@ class Publicacion extends Model
                         'fecha' => $fechaVenc,
                         'fecha_hora_texto' => $this->formatearFechaHora($fechaVenc),
                         'responsable' => 'Sistema institucional',
-                        'motivo' => 'Publicación expirada. Objeto pendiente de entrega física a biblioteca institucional. ' . $this->plazo_entrega_biblioteca_texto,
+                        'motivo' => 'Publicación expirada. Objeto pendiente de entrega física a biblioteca institucional. ' . $this->plazo_entrega_biblioteca_texto . ' ' . $this->orientacion_entrega_previa_vencimiento_texto,
                         'color' => 'amber',
                         'orden_prioridad' => 42,
                     ]);

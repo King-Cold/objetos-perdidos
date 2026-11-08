@@ -198,6 +198,33 @@
                             <span class="font-bold {{ $publicacion->fecha_primera_aprobacion ? 'text-slate-800' : 'text-amber-700' }}">{{ $publicacion->vigencia_texto }}</span>
                         </div>
                     </div>
+
+                    @if ($publicacion->correspondeEntregaBiblioteca())
+                        <div class="pt-3 border-t border-slate-100">
+                            <div class="p-4 rounded-2xl bg-amber-50/90 border border-amber-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div class="space-y-1">
+                                    <p class="text-xs font-extrabold text-amber-950">
+                                        Seguimiento de reporte expirado ({{ $publicacion->folio }})
+                                    </p>
+                                    <p class="text-xs text-amber-900 leading-relaxed font-medium">
+                                        {{ $publicacion->orientacion_entrega_previa_vencimiento_texto }}
+                                    </p>
+                                </div>
+
+                                @if ($isAdmin && $publicacion->puedeRegistrarDevolucionExtemporanea())
+                                    <div class="shrink-0">
+                                        <a href="{{ route('admin.devoluciones-extemporaneas.create', $publicacion->id) }}"
+                                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold transition-all shadow-xs">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <span>Registrar devolución reportada fuera de tiempo</span>
+                                        </a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </section>
 

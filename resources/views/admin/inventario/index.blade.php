@@ -83,10 +83,15 @@
                                         @endif
                                     </div>
                                     <div class="min-w-0 flex-1">
-                                        <span class="font-mono text-[11px] font-bold text-[#691C32] block">
-                                            {{ $pendiente->folio }}
-                                        </span>
-                                        <h3 class="font-bold text-slate-900 text-xs sm:text-sm truncate" title="{{ $pendiente->nombre ?? $pendiente->titulo }}">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="font-mono text-[11px] font-bold text-[#691C32] truncate">
+                                                {{ $pendiente->folio }}
+                                            </span>
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
+                                                Venció el {{ $pendiente->fecha_vencimiento ? $pendiente->fecha_vencimiento->format('d/m/Y') : '' }}
+                                            </span>
+                                        </div>
+                                        <h3 class="font-bold text-slate-900 text-xs sm:text-sm truncate mt-0.5" title="{{ $pendiente->nombre ?? $pendiente->titulo }}">
                                             {{ $pendiente->nombre ?? $pendiente->titulo }}
                                         </h3>
                                         <span class="text-[11px] text-slate-500 block truncate">
@@ -95,18 +100,24 @@
                                     </div>
                                 </div>
 
-                                <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                                        Venció el {{ $pendiente->fecha_vencimiento ? $pendiente->fecha_vencimiento->format('d/m/Y') : '' }}
-                                    </span>
-
+                                <div class="pt-2.5 border-t border-slate-100 flex flex-col gap-1.5">
                                     <a href="{{ route('admin.recepciones.create', $pendiente->id) }}"
-                                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#691C32] hover:bg-[#520B1D] text-white text-xs font-bold shadow-2xs transition-all hover:scale-[1.02]">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                       class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#691C32] hover:bg-[#520B1D] text-white text-xs font-bold shadow-2xs transition-all">
+                                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                                         </svg>
                                         <span>Registrar recepción</span>
                                     </a>
+
+                                    @if ($pendiente->puedeRegistrarDevolucionExtemporanea())
+                                        <a href="{{ route('admin.devoluciones-extemporaneas.create', $pendiente->id) }}"
+                                           class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-800 hover:bg-amber-900 text-white text-[11px] font-bold shadow-2xs transition-all">
+                                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <span>Registrar devolución reportada fuera de tiempo</span>
+                                        </a>
+                                    @endif
                                 </div>
                             </div>
                         @endforeach

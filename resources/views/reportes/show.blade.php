@@ -145,10 +145,10 @@
                     </div>
                 </div>
 
-                {{-- Aviso institucional de entrega a biblioteca al vencer (HU-16 / Tarea 2) --}}
+                {{-- Aviso institucional de entrega a biblioteca y orientación de entrega previa al vencimiento --}}
                 @if ($publicacion->correspondeEntregaBiblioteca())
-                    <div class="p-4 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-950 shadow-2xs">
-                        <div class="font-extrabold flex items-center gap-2 text-amber-900 text-sm mb-1">
+                    <div class="p-4 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-950 shadow-2xs space-y-2">
+                        <div class="font-extrabold flex items-center gap-2 text-amber-900 text-sm">
                             <svg class="w-5 h-5 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
@@ -156,6 +156,9 @@
                         </div>
                         <p class="leading-relaxed text-amber-900 text-xs font-medium">
                             {{ $publicacion->plazo_entrega_biblioteca_texto }}
+                        </p>
+                        <p class="leading-relaxed text-amber-950 text-xs font-bold pt-2 border-t border-amber-200/80">
+                            {{ $publicacion->orientacion_entrega_previa_vencimiento_texto }}
                         </p>
                     </div>
                 @endif

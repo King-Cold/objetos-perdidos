@@ -44,61 +44,77 @@
                     </a>
                 </div>
 
-                <!-- Título principal, información secundaria e insignia de estado -->
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                        <h1 class="text-2xl sm:text-[26px] font-bold text-[#1F2937] tracking-tight leading-tight">
-                            Revisar reporte
-                        </h1>
-                        <p class="text-xs sm:text-[13px] font-medium text-[#64748B] mt-0.5">
-                            <span class="text-[#1F2937] font-semibold">{{ $reporte->nombre ?? $reporte->titulo }}</span>
-                            <span class="mx-1.5 text-slate-300">•</span>
-                            <span>Folio: <strong class="font-mono text-[#1F2937]">{{ $reporte->folio }}</strong></span>
-                        </p>
+                <!-- Encabezado principal ordenado en dos niveles para evitar elementos amontonados -->
+                <div class="bg-white rounded-2xl border border-[#E2E8F0] p-4 sm:p-5 shadow-2xs space-y-4">
+                    <!-- Nivel 1: Título, datos del folio e insignias de estado -->
+                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+                        <div class="min-w-0 space-y-1">
+                            <h1 class="text-xl sm:text-2xl font-bold text-[#1F2937] tracking-tight leading-tight">
+                                Revisar reporte
+                            </h1>
+                            <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm font-medium text-[#64748B]">
+                                <span class="text-[#1F2937] font-bold">{{ $reporte->nombre ?? $reporte->titulo }}</span>
+                                <span class="text-slate-300">•</span>
+                                <span>Folio: <strong class="font-mono text-[#691C32] font-bold">{{ $reporte->folio }}</strong></span>
+                            </div>
+                            <p class="text-xs sm:text-[13px] text-[#64748B]">
+                                Verifica la información y las fotografías del reporte antes de tomar una decisión.
+                            </p>
+                        </div>
+
+                        <!-- Insignias de estado alineadas a la derecha -->
+                        <div class="flex flex-wrap items-center gap-2 lg:justify-end shrink-0">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold {{ $reporte->isCancelado() ? 'bg-rose-100 text-rose-900 border border-rose-300' : ($reporte->estado === 'Aprobada' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : ($reporte->isPendienteRevision() ? 'bg-amber-100 text-amber-900 border border-amber-300' : ($reporte->isCorreccionSolicitada() ? 'bg-orange-100 text-orange-900 border border-orange-300' : 'bg-slate-100 text-slate-800'))) }}">
+                                {{ $reporte->estado }}
+                            </span>
+
+                            @if ($reporte->isVencida())
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-900 border border-rose-300">
+                                    Expirada
+                                </span>
+                            @endif
+
+                            @if ($reporte->correspondeEntregaBiblioteca())
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+                                    <span>Pendiente de entrega a biblioteca</span>
+                                </span>
+                            @endif
+                        </div>
                     </div>
 
-                    <!-- Acciones e Insignia de estado (HU-13 / Acceso al historial desde moderación) -->
-                    <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
+                    <!-- Nivel 2: Barra de acciones administrativas separada con divisor sutil -->
+                    <div class="pt-3.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2.5">
                         <a href="{{ route('reportes.historial', $reporte->id) }}"
-                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-[#691C32] text-xs font-bold transition-all shadow-2xs">
+                           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-[#691C32] text-xs font-bold transition-all shadow-2xs">
                             <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <span>Ver historial del objeto</span>
                         </a>
 
-                        @if ($reporte->esElegibleParaRecepcionFisica())
-                            <a href="{{ route('admin.recepciones.create', $reporte->id) }}"
-                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#691C32] hover:bg-[#520B1D] text-white text-xs font-bold transition-all shadow-xs">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                </svg>
-                                <span>Registrar recepción</span>
-                            </a>
-                        @endif
+                        <div class="flex flex-wrap items-center gap-2.5">
+                            @if ($reporte->puedeRegistrarDevolucionExtemporanea())
+                                <a href="{{ route('admin.devoluciones-extemporaneas.create', $reporte->id) }}"
+                                   class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold transition-all shadow-xs">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>Registrar devolución reportada fuera de tiempo</span>
+                                </a>
+                            @endif
 
-                        @if ($reporte->isVencida())
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-900 border border-rose-300">
-                                Expirada
-                            </span>
-                        @endif
-
-                        @if ($reporte->correspondeEntregaBiblioteca())
-                            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
-                                <span>Pendiente de entrega a biblioteca</span>
-                            </span>
-                        @endif
-
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold {{ $reporte->isCancelado() ? 'bg-rose-100 text-rose-900 border border-rose-300' : ($reporte->estado === 'Aprobada' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : ($reporte->isPendienteRevision() ? 'bg-amber-100 text-amber-900 border border-amber-300' : ($reporte->isCorreccionSolicitada() ? 'bg-orange-100 text-orange-900 border border-orange-300' : 'bg-slate-100 text-slate-800'))) }}">
-                            {{ $reporte->estado }}
-                        </span>
+                            @if ($reporte->esElegibleParaRecepcionFisica())
+                                <a href="{{ route('admin.recepciones.create', $reporte->id) }}"
+                                   class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#691C32] hover:bg-[#520B1D] text-white text-xs font-bold transition-all shadow-xs">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                    </svg>
+                                    <span>Registrar recepción</span>
+                                </a>
+                            @endif
+                        </div>
                     </div>
                 </div>
-
-                <!-- Texto introductorio en una sola línea discreta -->
-                <p class="text-xs sm:text-[13px] text-[#64748B] pt-0.5">
-                    Verifica la información y las fotografías del reporte antes de tomar una decisión.
-                </p>
             </div>
 
             <!-- MENSAJES DE ESTADO Y RETROALIMENTACIÓN -->
