@@ -24,11 +24,16 @@ class StoreDevolucionExtemporaneaRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        $fechaEntrega = is_string($this->fecha_entrega) ? trim($this->fecha_entrega) : $this->fecha_entrega;
+        if (is_string($fechaEntrega) && strlen($fechaEntrega) > 10 && preg_match('/^\d{4}-\d{2}-\d{2}/', $fechaEntrega)) {
+            $fechaEntrega = substr($fechaEntrega, 0, 10);
+        }
+
         $this->merge([
             'motivo_registro_tardio' => is_string($this->motivo_registro_tardio) ? trim($this->motivo_registro_tardio) : $this->motivo_registro_tardio,
             'receptor_nombre' => is_string($this->receptor_nombre) ? trim($this->receptor_nombre) : $this->receptor_nombre,
             'receptor_identificador' => is_string($this->receptor_identificador) ? trim($this->receptor_identificador) : $this->receptor_identificador,
-            'fecha_entrega' => is_string($this->fecha_entrega) ? trim($this->fecha_entrega) : $this->fecha_entrega,
+            'fecha_entrega' => $fechaEntrega,
             'hora_entrega' => is_string($this->hora_entrega) ? trim($this->hora_entrega) : $this->hora_entrega,
             'explicacion_propiedad' => is_string($this->explicacion_propiedad) ? trim($this->explicacion_propiedad) : $this->explicacion_propiedad,
         ]);

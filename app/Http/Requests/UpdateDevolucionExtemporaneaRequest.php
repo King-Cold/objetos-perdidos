@@ -165,11 +165,15 @@ class UpdateDevolucionExtemporaneaRequest extends FormRequest
                     }
 
                     if ($fechaVencimientoOriginal) {
-                        $vencDate = $fechaVencimientoOriginal->format('Y-m-d');
-                        $vencTime = $fechaVencimientoOriginal->format('H:i');
+                        try {
+                            $momentoEntrega = Carbon::createFromFormat('Y-m-d H:i', "{$fechaEntrega} {$inputTime}", $timezone);
+                            $momentoVencimientoComparacion = $fechaVencimientoOriginal->copy()->startOfMinute();
 
-                        if ($fechaEntrega === $vencDate && $inputTime >= $vencTime) {
-                            $fail('La fecha y hora reales de entrega deben ser estrictamente anteriores al vencimiento original (' . $vencDate . ' ' . $vencTime . ').');
+                            if ($momentoEntrega->greaterThanOrEqualTo($momentoVencimientoComparacion)) {
+                                $fail('La fecha y hora reales de entrega deben ser estrictamente anteriores al vencimiento original del reporte. Una entrega realizada al vencer el plazo o después no se acepta mediante este procedimiento.');
+                            }
+                        } catch (\Throwable $e) {
+                            $fail('La fecha y hora de entrega proporcionadas no son válidas.');
                         }
                     }
                 },
