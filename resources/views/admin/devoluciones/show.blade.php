@@ -71,9 +71,13 @@
                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-bold transition-all shadow-2xs">
                                     <span>Ver incidencia #{{ $incidenciaExistente->id }}</span>
                                 </a>
-                            @elseif ($publicacion->estado === \App\Models\Publicacion::ESTADO_DEVUELTO)
+                            @elseif ($publicacion)
                                 <a href="{{ route('admin.incidencias.create', ['publicacionId' => $publicacion->id, 'devolucion_id' => $devolucion->id]) }}"
-                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-bold transition-all shadow-2xs">
+                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-bold transition-all shadow-2xs"
+                                   title="Canalizar contradicciones o incidencias de entrega">
+                                    <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
                                     <span>Abrir incidencia</span>
                                 </a>
                             @endif
@@ -566,12 +570,22 @@
                         </button>
                     </div>
                 @else
-                    <!-- Estado de resolución informativa -->
-                    <div class="text-xs font-semibold text-slate-500">
+                    <!-- Estado de resolución informativa o acción de corrección -->
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                         @if ($devolucion->isAprobada())
-                            <span class="text-emerald-700 font-bold">✓ Devolución aprobada institucionalmente. El objeto se encuentra en estado «Devuelto».</span>
+                            <span class="text-xs font-bold text-emerald-700">✓ Devolución aprobada institucionalmente. El objeto se encuentra en estado «Devuelto».</span>
                         @elseif ($devolucion->isRequiereCorreccion())
-                            <span class="text-orange-700 font-bold">⚠ Se solicitó corrección al autor. Esperando atención y nuevo envío a revisión.</span>
+                            @if ($devolucion->isRegistroExtemporaneo())
+                                <a href="{{ route('admin.devoluciones-extemporaneas.edit', $devolucion->id) }}"
+                                   class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-colors shadow-2xs">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    <span>Corregir y reenviar devolución</span>
+                                </a>
+                            @else
+                                <span class="text-xs font-bold text-orange-700">⚠ Se solicitó corrección al autor. Esperando atención y nuevo envío a revisión.</span>
+                            @endif
                         @endif
                     </div>
                 @endif
@@ -704,8 +718,9 @@
                                     @enderror
                                 </div>
 
-                                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-500 leading-relaxed">
-                                    Al confirmar, la devolución pasará a <strong>«Requiere corrección»</strong> y saldrá de la cola de pendientes. Los datos capturados y la fotografía actual se conservarán como historial.
+                                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-500 leading-relaxed space-y-1">
+                                    <p>Al confirmar, la devolución pasará a <strong>«Requiere corrección»</strong> y saldrá de la cola de pendientes. Los datos capturados y la fotografía actual se conservarán como historial.</p>
+                                    <p class="text-amber-800 font-medium">Nota: Si existen contradicciones sobre el receptor o la propiedad, o si la entrega física ocurrió después del vencimiento, canaliza el caso abriendo una <strong>incidencia administrativa</strong>.</p>
                                 </div>
                             </div>
 

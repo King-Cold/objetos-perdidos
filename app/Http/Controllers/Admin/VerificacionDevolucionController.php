@@ -178,11 +178,19 @@ class VerificacionDevolucionController extends Controller
                     $publicacion->save();
 
                     // 9. Registrar evento en el historial de decisiones
+                    $esExtemporanea = method_exists($devolucion, 'isRegistroExtemporaneo')
+                        ? $devolucion->isRegistroExtemporaneo()
+                        : (bool) ($devolucion->es_registro_extemporaneo ?? false);
+
+                    $motivoDecision = $esExtemporanea
+                        ? 'Devolución previa registrada tardíamente'
+                        : 'Devolución física aprobada tras verificación y validación de evidencia.';
+
                     DecisionModeracion::create([
                         'publicacion_id' => $publicacion->id,
                         'user_id' => Auth::id(),
                         'tipo_decision' => DecisionModeracion::TIPO_DEVOLUCION_APROBADA,
-                        'motivo' => 'Devolución física aprobada tras verificación y validación de evidencia.',
+                        'motivo' => $motivoDecision,
                         'fecha_decision' => $ahoraMerida,
                     ]);
                 }
