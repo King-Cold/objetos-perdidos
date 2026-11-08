@@ -261,7 +261,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // Historial del objeto desde apartados de gestión (HU-13 / Tarea 1)
     Route::get('/reportes/{id}/historial', [HistorialController::class, 'show'])->name('admin.reportes.historial');
 
-    // HU-17: Gestión de incidencias y dudas de entrega (Subtarea 1 y Subtarea 2)
+    // HU-17: Gestión de incidencias y dudas de entrega (Subtarea 1, Subtarea 2 y Subtarea 3)
     Route::get('/incidencias', [IncidenciaController::class, 'index'])->name('admin.incidencias.index');
     Route::get('/incidencias/crear/{publicacionId?}', [IncidenciaController::class, 'create'])->name('admin.incidencias.create');
     Route::post('/incidencias/{publicacionId?}', [IncidenciaController::class, 'store'])->name('admin.incidencias.store');
@@ -271,6 +271,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::post('/incidencias/{id}/confirmar-entrega-correcta', [IncidenciaController::class, 'confirmarEntregaCorrecta'])->name('admin.incidencias.confirmar-entrega-correcta');
     Route::post('/incidencias/{id}/solicitar-correccion', [IncidenciaController::class, 'solicitarCorreccion'])->name('admin.incidencias.solicitar-correccion');
     Route::post('/incidencias/{id}/confirmar-entrega-incorrecta', [IncidenciaController::class, 'confirmarEntregaIncorrecta'])->name('admin.incidencias.confirmar-entrega-incorrecta');
+    Route::post('/incidencias/{id}/recuperacion-fisica', [IncidenciaController::class, 'registrarRecuperacionFisica'])->name('admin.incidencias.recuperacion-fisica');
+    Route::post('/incidencias/{id}/cerrar', [IncidenciaController::class, 'cerrarIncidencia'])->name('admin.incidencias.cerrar');
+    Route::post('/incidencias/{id}/canalizar', [IncidenciaController::class, 'canalizarSinResolver'])->name('admin.incidencias.canalizar');
     Route::post('/reportes/{id}/incidencias', [IncidenciaController::class, 'store'])->name('admin.reportes.incidencias.store');
     Route::post('/devoluciones/{id}/incidencias', [IncidenciaController::class, 'storeFromDevolucion'])->name('admin.devoluciones.incidencias.store');
 });

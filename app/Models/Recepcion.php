@@ -17,6 +17,7 @@ class Recepcion extends Model
 
     protected $fillable = [
         'publicacion_id',
+        'incidencia_id',
         'user_id',
         'actualizado_por_id',
         'fecha_recepcion',
@@ -223,6 +224,11 @@ class Recepcion extends Model
     public function publicacion(): BelongsTo
     {
         return $this->belongsTo(Publicacion::class);
+    }
+
+    public function incidencia(): BelongsTo
+    {
+        return $this->belongsTo(Incidencia::class, 'incidencia_id');
     }
 
     public function user(): BelongsTo

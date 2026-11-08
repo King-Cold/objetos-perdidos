@@ -24,6 +24,7 @@ class Incidencia extends Model
     protected $fillable = [
         'publicacion_id',
         'devolucion_id',
+        'recepcion_id',
         'user_id',
         'responsable_revision_id',
         'cerrada_por_id',
@@ -32,12 +33,18 @@ class Incidencia extends Model
         'resultado',
         'motivo_resolucion',
         'solicitud_recuperacion',
+        'recuperacion_confirmada',
+        'fecha_recuperacion',
+        'responsable_canalizacion',
+        'observaciones_seguimiento',
         'fecha_apertura',
         'fecha_revision',
         'fecha_cierre',
     ];
 
     protected $casts = [
+        'recuperacion_confirmada' => 'boolean',
+        'fecha_recuperacion' => 'datetime',
         'fecha_apertura' => 'datetime',
         'fecha_revision' => 'datetime',
         'fecha_cierre' => 'datetime',
@@ -51,6 +58,11 @@ class Incidencia extends Model
     public function devolucion(): BelongsTo
     {
         return $this->belongsTo(Devolucion::class, 'devolucion_id');
+    }
+
+    public function recepcion(): BelongsTo
+    {
+        return $this->belongsTo(Recepcion::class, 'recepcion_id');
     }
 
     public function user(): BelongsTo
@@ -106,6 +118,20 @@ class Incidencia extends Model
         }
 
         return $this->formatMeridaDateTime($this->fecha_cierre);
+    }
+
+    public function getFechaRecuperacionTextoAttribute(): ?string
+    {
+        if (!$this->fecha_recuperacion) {
+            return null;
+        }
+
+        return $this->formatMeridaDateTime($this->fecha_recuperacion);
+    }
+
+    public function hasRecuperacionFisicaConfirmada(): bool
+    {
+        return (bool) $this->recuperacion_confirmada && $this->recepcion_id !== null;
     }
 
     public function getSeguimientoAutorizadoAttribute(): string

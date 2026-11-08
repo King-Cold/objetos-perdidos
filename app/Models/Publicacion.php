@@ -305,10 +305,37 @@ class Publicacion extends Model
     }
 
     /**
-     * Determina si el reporte cumple todas las condiciones para registrar recepción física por vencimiento (HU-16 / Tarea 1).
+     * Determina si el reporte tiene una incidencia activa en estado «En espera de recuperación»
+     * pendiente de recepción física en biblioteca.
+     */
+    public function esElegibleParaRecuperacionPorIncidencia(): bool
+    {
+        if ($this->relationLoaded('incidencias')) {
+            return $this->incidencias->contains(function (Incidencia $inc) {
+                return $inc->estado === Incidencia::ESTADO_ESPERA_RECUPERACION
+                    && ! $inc->hasRecuperacionFisicaConfirmada();
+            });
+        }
+
+        return $this->incidencias()
+            ->where('estado', Incidencia::ESTADO_ESPERA_RECUPERACION)
+            ->where(function ($q) {
+                $q->whereNull('recuperacion_confirmada')
+                    ->orWhere('recuperacion_confirmada', false)
+                    ->orWhereNull('recepcion_id');
+            })
+            ->exists();
+    }
+
+    /**
+     * Determina si el reporte cumple todas las condiciones para registrar recepción física en biblioteca.
      */
     public function esElegibleParaRecepcionFisica(): bool
     {
+        if ($this->esElegibleParaRecuperacionPorIncidencia()) {
+            return true;
+        }
+
         return $this->correspondeEntregaBiblioteca();
     }
 

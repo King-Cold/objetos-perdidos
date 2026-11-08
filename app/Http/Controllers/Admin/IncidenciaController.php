@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Events\DevolucionAprobada;
 use App\Events\DevolucionCorreccionSolicitada;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreRecepcionRequest;
 use App\Models\DecisionModeracion;
 use App\Models\Devolucion;
 use App\Models\Incidencia;
 use App\Models\IncidenciaObservacion;
 use App\Models\Publicacion;
+use App\Models\Recepcion;
 use Carbon\Carbon;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\RedirectResponse;
@@ -50,12 +52,33 @@ class IncidenciaController extends Controller
                 if (!Schema::hasColumn('incidencias', 'solicitud_recuperacion')) {
                     $table->text('solicitud_recuperacion')->nullable()->after('motivo_resolucion');
                 }
+                if (!Schema::hasColumn('incidencias', 'recepcion_id')) {
+                    $table->foreignId('recepcion_id')->nullable()->after('devolucion_id')->constrained('recepciones')->nullOnDelete();
+                }
+                if (!Schema::hasColumn('incidencias', 'recuperacion_confirmada')) {
+                    $table->boolean('recuperacion_confirmada')->default(false)->after('solicitud_recuperacion');
+                }
+                if (!Schema::hasColumn('incidencias', 'fecha_recuperacion')) {
+                    $table->dateTime('fecha_recuperacion')->nullable()->after('recuperacion_confirmada');
+                }
+                if (!Schema::hasColumn('incidencias', 'responsable_canalizacion')) {
+                    $table->string('responsable_canalizacion')->nullable()->after('fecha_recuperacion');
+                }
+                if (!Schema::hasColumn('incidencias', 'observaciones_seguimiento')) {
+                    $table->text('observaciones_seguimiento')->nullable()->after('responsable_canalizacion');
+                }
                 if (!Schema::hasColumn('incidencias', 'fecha_revision')) {
                     $table->dateTime('fecha_revision')->nullable()->after('fecha_apertura');
                 }
                 if (!Schema::hasColumn('incidencias', 'fecha_cierre')) {
                     $table->dateTime('fecha_cierre')->nullable()->after('fecha_revision');
                 }
+            });
+        }
+
+        if (Schema::hasTable('recepciones') && !Schema::hasColumn('recepciones', 'incidencia_id')) {
+            Schema::table('recepciones', function (Blueprint $table) {
+                $table->foreignId('incidencia_id')->nullable()->after('publicacion_id')->constrained('incidencias')->nullOnDelete();
             });
         }
 
@@ -307,16 +330,25 @@ class IncidenciaController extends Controller
         $incidencia = Incidencia::with([
             'publicacion.user',
             'publicacion.fotografias',
-            'publicacion.recepcion',
+            'publicacion.recepcion.user',
             'devolucion.user',
             'devolucion.admin',
+            'recepcion.user',
             'user',
             'responsableRevision',
             'cerradaPor',
             'observaciones.user',
         ])->findOrFail($id);
 
-        return view('admin.incidencias.show', compact('incidencia'));
+        $ahoraMerida = Carbon::now(Publicacion::TIMEZONE);
+        $fechaRecepcionDefault = $ahoraMerida->format('Y-m-d');
+        $horaRecepcionDefault = $ahoraMerida->format('H:i');
+
+        return view('admin.incidencias.show', compact(
+            'incidencia',
+            'fechaRecepcionDefault',
+            'horaRecepcionDefault'
+        ));
     }
 
     /**
@@ -404,6 +436,8 @@ class IncidenciaController extends Controller
             'entrega_correcta' => $this->confirmarEntregaCorrecta($request, $id),
             'solicitar_correccion' => $this->solicitarCorreccion($request, $id),
             'entrega_incorrecta' => $this->confirmarEntregaIncorrecta($request, $id),
+            'cerrar_incidencia' => $this->cerrarIncidencia($request, $id),
+            'canalizar_sin_resolver' => $this->canalizarSinResolver($request, $id),
             default => redirect()
                 ->route('admin.incidencias.show', $id)
                 ->withErrors(['decision' => 'Debes seleccionar una decisión de revisión válida.']),
@@ -672,5 +706,317 @@ class IncidenciaController extends Controller
         return redirect()
             ->route('admin.incidencias.show', $incidencia->id)
             ->with('status', 'Se registró la conclusión de entrega incorrecta y la solicitud de llevar el objeto a biblioteca. La incidencia quedó «En espera de recuperación».');
+    }
+
+    /**
+     * CA-08: Confirmación de recuperación mediante recepción física en biblioteca.
+     * Completa la recuperación física vinculando la recepción con la incidencia y el reporte original,
+     * conservando intactos los antecedentes y evidencias de la entrega incorrecta anterior,
+     * sin marcar como correcta esa entrega y sin publicar automáticamente el objeto.
+     */
+    public function registrarRecuperacionFisica(StoreRecepcionRequest $request, $id): RedirectResponse
+    {
+        $incidencia = Incidencia::with(['publicacion', 'devolucion'])->findOrFail($id);
+
+        if (!$incidencia->isActiva()) {
+            return redirect()
+                ->route('admin.incidencias.show', $incidencia->id)
+                ->with('error', 'No es posible registrar recuperación física porque la incidencia ya no está activa.');
+        }
+
+        if ($incidencia->estado !== Incidencia::ESTADO_ESPERA_RECUPERACION) {
+            return redirect()
+                ->route('admin.incidencias.show', $incidencia->id)
+                ->with('error', 'La recepción física por recuperación únicamente aplica para incidencias en estado «En espera de recuperación».');
+        }
+
+        if ($incidencia->hasRecuperacionFisicaConfirmada()) {
+            return redirect()
+                ->route('admin.incidencias.show', $incidencia->id)
+                ->with('error', 'La recuperación física de este objeto en biblioteca ya fue registrada previamente.');
+        }
+
+        $publicacion = $incidencia->publicacion;
+        if (!$publicacion) {
+            return redirect()
+                ->route('admin.incidencias.show', $incidencia->id)
+                ->with('error', 'No se encontró el reporte original vinculado a la incidencia.');
+        }
+
+        $ahora = Carbon::now(Publicacion::TIMEZONE);
+        $fechaRecepcion = $request->validated('fecha_recepcion');
+        $horaRecepcion = substr((string) $request->validated('hora_recepcion'), 0, 5);
+        $condicionObjeto = $request->validated('condicion_objeto');
+        $ubicacionResguardo = $request->validated('ubicacion_resguardo');
+        $observaciones = $request->validated('observaciones');
+
+        DB::transaction(function () use (
+            $incidencia,
+            $publicacion,
+            $ahora,
+            $fechaRecepcion,
+            $horaRecepcion,
+            $condicionObjeto,
+            $ubicacionResguardo,
+            $observaciones
+        ) {
+            // 1. Registrar la recepción física en biblioteca vinculada a la incidencia y al reporte original
+            $recepcion = Recepcion::create([
+                'publicacion_id' => $publicacion->id,
+                'incidencia_id' => $incidencia->id,
+                'user_id' => Auth::id(),
+                'fecha_recepcion' => $fechaRecepcion,
+                'hora_recepcion' => $horaRecepcion,
+                'fecha_captura' => $ahora,
+                'condicion_objeto' => $condicionObjeto,
+                'ubicacion_resguardo' => $ubicacionResguardo,
+                'observaciones' => $observaciones,
+                'confirmacion_cotejo' => true,
+                'fecha_limite_anual' => Recepcion::calcularFechaLimiteAnual($fechaRecepcion, $horaRecepcion),
+            ]);
+
+            // 2. Vincular la recepción en la incidencia y confirmar su recuperación física
+            $incidencia->update([
+                'recepcion_id' => $recepcion->id,
+                'recuperacion_confirmada' => true,
+                'fecha_recuperacion' => $ahora,
+                'resultado' => 'Recuperación física confirmada mediante recepción en biblioteca',
+            ]);
+
+            // 3. Actualizar la situación de resguardo del objeto sin publicarlo automáticamente
+            // y conservando el antecedente y la evidencia de la devolución incorrecta sin marcarla como correcta
+            $publicacion->update([
+                'situacion_resguardo' => 'En biblioteca',
+                'disponible' => false,
+                'estado_devolucion' => 'Recuperado en biblioteca',
+            ]);
+
+            // 4. Registrar observación de resultado obtenido y decisión en el historial
+            IncidenciaObservacion::create([
+                'incidencia_id' => $incidencia->id,
+                'user_id' => Auth::id(),
+                'tipo' => IncidenciaObservacion::TIPO_RESULTADO,
+                'medio_contacto' => 'Recepción presencial en biblioteca',
+                'descripcion' => "Recepción física del objeto en biblioteca (Recepción #{$recepcion->id}). Ubicación asignada: {$ubicacionResguardo}. Condición: {$condicionObjeto}.",
+                'resultado_obtenido' => 'Recuperación física confirmada en biblioteca; se conservan antecedentes y evidencias de la entrega anterior.',
+                'fecha_registro' => $ahora,
+            ]);
+
+            DecisionModeracion::create([
+                'publicacion_id' => $publicacion->id,
+                'user_id' => Auth::id(),
+                'tipo_decision' => 'recepcion_biblioteca',
+                'motivo' => "Recuperación física confirmada mediante recepción en biblioteca (Incidencia #{$incidencia->id}, Recepción #{$recepcion->id}). Ubicación: {$ubicacionResguardo}.",
+                'fecha_decision' => $ahora,
+            ]);
+        });
+
+        return redirect()
+            ->route('admin.incidencias.show', $incidencia->id)
+            ->with('status', 'Se confirmó la recuperación física del objeto mediante su recepción en biblioteca, conservando los antecedentes y evidencias de la entrega anterior.');
+    }
+
+    /**
+     * CA-07, CA-08 y CA-13: Cierre de incidencia con motivo, resultado, fecha y responsable.
+     * - Si existió entrega incorrecta («En espera de recuperación»), únicamente permite cerrar la incidencia
+     *   después de confirmar la recuperación mediante recepción física en biblioteca (una promesa no es recuperación).
+     * - Si solo existió prueba incompleta («En espera de corrección»), verifica que la devolución esté completa y la aprueba.
+     * - Conserva siempre los antecedentes y evidencias privadas.
+     */
+    public function cerrarIncidencia(Request $request, $id): RedirectResponse
+    {
+        $incidencia = Incidencia::with(['publicacion.devoluciones', 'publicacion.recepcion', 'devolucion', 'recepcion'])->findOrFail($id);
+
+        if (!$incidencia->isActiva()) {
+            return redirect()
+                ->route('admin.incidencias.show', $incidencia->id)
+                ->with('error', 'Esta incidencia ya fue resuelta o cerrada previamente.');
+        }
+
+        // Si el caso está en espera de corrección, delegar a la aprobación de entrega correcta tras validar evidencia
+        if ($incidencia->estado === Incidencia::ESTADO_ESPERA_CORRECCION) {
+            return $this->confirmarEntregaCorrecta($request, $id);
+        }
+
+        // Si existió entrega incorrecta, exigir que la recuperación física en biblioteca esté confirmada
+        $recepcionVinculada = $incidencia->recepcion ?? $incidencia->publicacion?->recepcion;
+        $recuperacionConfirmada = $incidencia->hasRecuperacionFisicaConfirmada() || $recepcionVinculada !== null;
+
+        if ($incidencia->estado === Incidencia::ESTADO_ESPERA_RECUPERACION && !$recuperacionConfirmada) {
+            return redirect()
+                ->route('admin.incidencias.show', $incidencia->id)
+                ->withErrors([
+                    'recuperacion' => 'No es posible cerrar la incidencia porque se confirmó una entrega incorrecta y aún no se ha registrado la recepción física del objeto en biblioteca. Una promesa de entrega no se considera recuperación física.',
+                ])
+                ->with('error', 'No es posible cerrar la incidencia sin confirmar primero la recepción física del objeto en biblioteca. Una promesa de devolverlo no se considera recuperación.');
+        }
+
+        // Si la incidencia sigue en estado «Abierta» y no tiene recepción física, verificar si se trata de entrega correcta
+        if ($incidencia->estado === Incidencia::ESTADO_ABIERTA && !$recuperacionConfirmada) {
+            return $this->confirmarEntregaCorrecta($request, $id);
+        }
+
+        $motivoLimpio = trim((string) $request->input('motivo', ''));
+        $resultadoLimpio = trim((string) $request->input(
+            'resultado',
+            'Objeto recuperado físicamente en biblioteca — Incidencia cerrada'
+        ));
+
+        $request->merge([
+            'motivo' => $motivoLimpio,
+            'resultado' => $resultadoLimpio !== '' ? $resultadoLimpio : 'Objeto recuperado físicamente en biblioteca — Incidencia cerrada',
+        ]);
+
+        $request->validate(
+            [
+                'motivo' => ['required', 'string', 'min:3', 'max:1500'],
+                'resultado' => ['required', 'string', 'min:3', 'max:255'],
+            ],
+            [
+                'motivo.required' => 'El motivo de cierre de la incidencia es obligatorio y no puede estar vacío ni compuesto solo por espacios.',
+                'motivo.min' => 'El motivo de cierre debe tener al menos 3 caracteres.',
+                'resultado.required' => 'Debes indicar el resultado de la resolución.',
+            ]
+        );
+
+        $publicacion = $incidencia->publicacion;
+        $ahora = Carbon::now(Publicacion::TIMEZONE);
+
+        DB::transaction(function () use ($incidencia, $publicacion, $recepcionVinculada, $motivoLimpio, $request, $ahora) {
+            $incidencia->update([
+                'recepcion_id' => $incidencia->recepcion_id ?? $recepcionVinculada?->id,
+                'recuperacion_confirmada' => true,
+                'fecha_recuperacion' => $incidencia->fecha_recuperacion ?? $ahora,
+                'estado' => Incidencia::ESTADO_CERRADA,
+                'resultado' => $request->input('resultado'),
+                'motivo_resolucion' => $motivoLimpio,
+                'responsable_revision_id' => $incidencia->responsable_revision_id ?? Auth::id(),
+                'cerrada_por_id' => Auth::id(),
+                'fecha_revision' => $incidencia->fecha_revision ?? $ahora,
+                'fecha_cierre' => $ahora,
+            ]);
+
+            // El objeto recuperado permanece bajo resguardo en biblioteca y fuera del muro público,
+            // conservando intacto el antecedente y la evidencia de la entrega incorrecta sin marcarla como correcta
+            if ($publicacion) {
+                $publicacion->update([
+                    'estado' => 'En resguardo',
+                    'situacion_resguardo' => 'En biblioteca',
+                    'disponible' => false,
+                    'devolucion_en_proceso' => false,
+                    'incidencia_abierta' => false,
+                    'tiene_incidencia' => true,
+                    'estado_devolucion' => 'Recuperado en biblioteca',
+                ]);
+
+                DecisionModeracion::create([
+                    'publicacion_id' => $publicacion->id,
+                    'user_id' => Auth::id(),
+                    'tipo_decision' => 'incidencia_cerrada_recuperacion',
+                    'motivo' => "Incidencia #{$incidencia->id} cerrada tras recuperación física en biblioteca ({$request->input('resultado')}): {$motivoLimpio}",
+                    'fecha_decision' => $ahora,
+                ]);
+            }
+        });
+
+        return redirect()
+            ->route('admin.incidencias.show', $incidencia->id)
+            ->with('status', 'La incidencia se cerró correctamente tras confirmar la recuperación física en biblioteca, conservando los antecedentes del caso.');
+    }
+
+    /**
+     * CA-09: Caso sin solución («Sin resolver y canalizada»).
+     * Si no es posible aclarar el caso ni recuperar el objeto, permite marcar la incidencia como
+     * «Sin resolver y canalizada», registrando motivo, fecha, responsable/destino institucional y observaciones
+     * de seguimiento. El objeto no se marca como «Devuelto» ni se ofrece como «Disponible», y no impone sanciones automáticas.
+     */
+    public function canalizarSinResolver(Request $request, $id): RedirectResponse
+    {
+        $incidencia = Incidencia::with(['publicacion', 'devolucion'])->findOrFail($id);
+
+        if (!$incidencia->isActiva()) {
+            return redirect()
+                ->route('admin.incidencias.show', $incidencia->id)
+                ->with('error', 'Esta incidencia ya fue cerrada o canalizada previamente.');
+        }
+
+        $motivoLimpio = trim((string) $request->input('motivo', ''));
+        $destinoLimpio = trim((string) $request->input('responsable_canalizacion', ''));
+        $observacionesLimpias = trim((string) $request->input('observaciones_seguimiento', ''));
+
+        $request->merge([
+            'motivo' => $motivoLimpio,
+            'responsable_canalizacion' => $destinoLimpio,
+            'observaciones_seguimiento' => $observacionesLimpias,
+        ]);
+
+        $request->validate(
+            [
+                'motivo' => ['required', 'string', 'min:3', 'max:1500'],
+                'responsable_canalizacion' => ['required', 'string', 'min:3', 'max:255'],
+                'observaciones_seguimiento' => ['required', 'string', 'min:3', 'max:2000'],
+            ],
+            [
+                'motivo.required' => 'El motivo por el que el caso no pudo resolverse ni recuperarse el objeto es obligatorio y no puede contener solo espacios.',
+                'motivo.min' => 'El motivo de canalización debe tener al menos 3 caracteres.',
+                'responsable_canalizacion.required' => 'Debes indicar el destino o instancia institucional a la que se canaliza el caso.',
+                'responsable_canalizacion.min' => 'El destino institucional debe tener al menos 3 caracteres.',
+                'observaciones_seguimiento.required' => 'Las observaciones de seguimiento para la canalización son obligatorias y no pueden contener solo espacios.',
+                'observaciones_seguimiento.min' => 'Las observaciones de seguimiento deben tener al menos 3 caracteres.',
+            ]
+        );
+
+        $publicacion = $incidencia->publicacion;
+        $ahora = Carbon::now(Publicacion::TIMEZONE);
+
+        DB::transaction(function () use ($incidencia, $publicacion, $motivoLimpio, $destinoLimpio, $observacionesLimpias, $ahora) {
+            // 1. Marcar la incidencia como «Sin resolver y canalizada» con motivo, fecha, responsable y observaciones
+            $incidencia->update([
+                'estado' => Incidencia::ESTADO_SIN_RESOLVER_CANALIZADA,
+                'resultado' => 'Sin resolver y canalizada',
+                'motivo_resolucion' => $motivoLimpio,
+                'responsable_canalizacion' => $destinoLimpio,
+                'observaciones_seguimiento' => $observacionesLimpias,
+                'responsable_revision_id' => $incidencia->responsable_revision_id ?? Auth::id(),
+                'cerrada_por_id' => Auth::id(),
+                'fecha_revision' => $incidencia->fecha_revision ?? $ahora,
+                'fecha_cierre' => $ahora,
+            ]);
+
+            // 2. Registrar en las observaciones de la incidencia la canalización institucional
+            IncidenciaObservacion::create([
+                'incidencia_id' => $incidencia->id,
+                'user_id' => Auth::id(),
+                'tipo' => IncidenciaObservacion::TIPO_RESULTADO,
+                'medio_contacto' => "Canalización institucional: {$destinoLimpio}",
+                'descripcion' => "Caso marcado como «Sin resolver y canalizada». Motivo: {$motivoLimpio}",
+                'resultado_obtenido' => $observacionesLimpias,
+                'fecha_registro' => $ahora,
+            ]);
+
+            // 3. El objeto NO debe marcarse como «Devuelto» ni ofrecerse como «Disponible», y no se imponen sanciones automáticas
+            if ($publicacion) {
+                $publicacion->update([
+                    'estado' => Incidencia::ESTADO_SIN_RESOLVER_CANALIZADA,
+                    'estado_devolucion' => Incidencia::ESTADO_SIN_RESOLVER_CANALIZADA,
+                    'disponible' => false,
+                    'devolucion_en_proceso' => false,
+                    'incidencia_abierta' => true,
+                    'tiene_incidencia' => true,
+                ]);
+
+                DecisionModeracion::create([
+                    'publicacion_id' => $publicacion->id,
+                    'user_id' => Auth::id(),
+                    'tipo_decision' => 'incidencia_canalizada',
+                    'motivo' => "Incidencia #{$incidencia->id} marcada como «Sin resolver y canalizada» (Destino: {$destinoLimpio}). Motivo: {$motivoLimpio} • Observaciones: {$observacionesLimpias}",
+                    'fecha_decision' => $ahora,
+                ]);
+            }
+        });
+
+        return redirect()
+            ->route('admin.incidencias.show', $incidencia->id)
+            ->with('status', 'La incidencia se marcó como «Sin resolver y canalizada» con su motivo, destino institucional, fecha, responsable y observaciones de seguimiento.');
     }
 }

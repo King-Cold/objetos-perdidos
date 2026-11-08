@@ -61,6 +61,24 @@
             <!-- CONTENIDO PRINCIPAL: COTEJO FÍSICO Y FORMULARIO -->
             <form action="{{ route('admin.recepciones.store', $reporte->id) }}" method="POST" class="space-y-6">
                 @csrf
+                @if(request()->boolean('from_incidencia'))
+                    <input type="hidden" name="from_incidencia" value="1">
+                @endif
+
+                @if(isset($incidenciaRecuperacion) && $incidenciaRecuperacion)
+                    <div class="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="text-xs sm:text-sm space-y-1">
+                            <p class="font-bold">Recuperación física vinculada a la Incidencia #{{ $incidenciaRecuperacion->id }}</p>
+                            <p class="text-amber-800">
+                                Al guardar esta recepción física en biblioteca, se confirmará la recuperación del objeto y quedará vinculada al caso conservando los antecedentes y evidencias de la entrega anterior.
+                            </p>
+                        </div>
+                        <a href="{{ route('admin.incidencias.show', $incidenciaRecuperacion->id) }}"
+                           class="shrink-0 inline-flex items-center px-3.5 py-2 rounded-lg bg-white border border-amber-300 text-amber-900 font-bold text-xs hover:bg-amber-100 transition-colors">
+                            Ver incidencia #{{ $incidenciaRecuperacion->id }}
+                        </a>
+                    </div>
+                @endif
 
                 <!-- SECCIÓN 1: COTEJO FÍSICO OBLIGATORIO (2 Columnas) -->
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">

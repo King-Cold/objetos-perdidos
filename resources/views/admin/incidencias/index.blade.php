@@ -70,6 +70,10 @@
                            class="px-3.5 py-1.5 rounded-full text-xs font-bold border transition {{ $filtroEstado === \App\Models\Incidencia::ESTADO_ESPERA_RECUPERACION ? 'bg-orange-700 text-white border-orange-700' : 'bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100' }}">
                             En espera de recuperación
                         </a>
+                        <a href="{{ route('admin.incidencias.index', ['estado' => \App\Models\Incidencia::ESTADO_SIN_RESOLVER_CANALIZADA]) }}"
+                           class="px-3.5 py-1.5 rounded-full text-xs font-bold border transition {{ $filtroEstado === \App\Models\Incidencia::ESTADO_SIN_RESOLVER_CANALIZADA ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200' }}">
+                            Sin resolver y canalizada
+                        </a>
                         <a href="{{ route('admin.incidencias.index', ['estado' => \App\Models\Incidencia::ESTADO_CERRADA]) }}"
                            class="px-3.5 py-1.5 rounded-full text-xs font-bold border transition {{ $filtroEstado === \App\Models\Incidencia::ESTADO_CERRADA ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' }}">
                             Cerradas ({{ $totalCerradas }})
@@ -185,6 +189,11 @@
                                             @elseif ($incidencia->estado === \App\Models\Incidencia::ESTADO_ESPERA_RECUPERACION)
                                                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-xs font-bold">
                                                     <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                                                    {{ $incidencia->estado }}
+                                                </span>
+                                            @elseif ($incidencia->estado === \App\Models\Incidencia::ESTADO_SIN_RESOLVER_CANALIZADA)
+                                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 border border-slate-300 text-slate-800 text-xs font-bold">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
                                                     {{ $incidencia->estado }}
                                                 </span>
                                             @else

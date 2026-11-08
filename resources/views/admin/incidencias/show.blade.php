@@ -139,6 +139,52 @@
                                 Solicitud de recuperación en biblioteca: {{ $incidencia->solicitud_recuperacion }}
                             </div>
                         @endif
+                        @if ($incidencia->responsable_canalizacion)
+                            <div class="pt-2 border-t border-slate-200/80 text-xs text-slate-800 space-y-1">
+                                <p><strong>Destino / Responsable de canalización institucional:</strong> {{ $incidencia->responsable_canalizacion }}</p>
+                                @if ($incidencia->observaciones_seguimiento)
+                                    <p><strong>Observaciones de seguimiento:</strong> {{ $incidencia->observaciones_seguimiento }}</p>
+                                @endif
+                            </div>
+                        @endif
+                        @if ($incidencia->fecha_cierre_texto)
+                            <div class="pt-2 border-t border-slate-200/80 text-xs text-slate-600">
+                                <strong>Fecha de resolución / cierre:</strong> {{ $incidencia->fecha_cierre_texto }}
+                                • <strong>Responsable:</strong> {{ $incidencia->cerradaPor?->name ?? $incidencia->responsableRevision?->name ?? 'Administrador' }}
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
+                {{-- Resumen de recepción física en biblioteca cuando la recuperación ya fue confirmada --}}
+                @php
+                    $recepcionVinculada = $incidencia->recepcion ?? $pub?->recepcion;
+                @endphp
+                @if ($recepcionVinculada)
+                    <div class="rounded-2xl bg-emerald-50/70 border border-emerald-200 p-5 space-y-2">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-900">
+                                Recuperación física confirmada mediante recepción en biblioteca (#{{ $recepcionVinculada->id }})
+                            </span>
+                            <span class="text-xs text-emerald-800 font-semibold">
+                                Recibido por: {{ $recepcionVinculada->user?->name ?? 'Personal de biblioteca' }}
+                                • {{ $incidencia->fecha_recuperacion_texto ?? $recepcionVinculada->fecha_captura_texto }}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-800 pt-1">
+                            <div>
+                                <span class="text-slate-500 block">Ubicación en biblioteca:</span>
+                                <strong>{{ $recepcionVinculada->ubicacion_resguardo }}</strong>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block">Condición registrada:</span>
+                                <strong>{{ $recepcionVinculada->condicion_objeto }}</strong>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block">Antecedente de entrega anterior:</span>
+                                <strong>Conservado con su evidencia privada (no marcada como correcta)</strong>
+                            </div>
+                        </div>
                     </div>
                 @endif
 
@@ -463,6 +509,220 @@
                             </button>
                         </form>
                     </div>
+                </div>
+
+                {{-- SECCIÓN CA-07, CA-08 y CA-13: VINCULAR RECUPERACIÓN FÍSICA EN BIBLIOTECA Y CIERRE TRAS RECUPERACIÓN --}}
+                @if ($incidencia->estado === \App\Models\Incidencia::ESTADO_ESPERA_RECUPERACION)
+                    <div class="bg-white rounded-3xl border border-orange-200 shadow-sm p-6 sm:p-8 space-y-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
+                            <div>
+                                <span class="inline-block px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-900 text-[11px] font-extrabold mb-1">
+                                    Seguimiento de entrega incorrecta confirmada
+                                </span>
+                                <h2 class="text-lg font-extrabold text-slate-900">
+                                    Recuperación física del objeto en biblioteca y cierre del caso
+                                </h2>
+                                <p class="text-xs text-slate-600 mt-0.5">
+                                    Una promesa de devolver el objeto no se considera recuperación. La recuperación se completa únicamente mediante la recepción física en biblioteca, conservando los antecedentes y evidencias de la entrega incorrecta.
+                                </p>
+                            </div>
+                            @if ($pub && !$incidencia->hasRecuperacionFisicaConfirmada())
+                                <a href="{{ route('admin.recepciones.create', ['id' => $pub->id, 'from_incidencia' => 1]) }}"
+                                   class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#4E0B1B] hover:bg-[#3A0814] text-white text-xs font-bold shadow-sm transition">
+                                    Ir al formulario de recepción en biblioteca
+                                </a>
+                            @endif
+                        </div>
+
+                        @if (!$incidencia->hasRecuperacionFisicaConfirmada() && !$recepcionVinculada)
+                            <form method="POST"
+                                  action="{{ route('admin.incidencias.recuperacion-fisica', $incidencia->id) }}"
+                                  class="rounded-2xl bg-orange-50/50 border border-orange-200 p-5 space-y-4">
+                                @csrf
+                                <h3 class="text-sm font-extrabold text-slate-900">
+                                    Confirmar recuperación mediante recepción física en biblioteca
+                                </h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                                            Fecha real de recepción <span class="text-rose-600">*</span>
+                                        </label>
+                                        <input type="date"
+                                               name="fecha_recepcion"
+                                               value="{{ old('fecha_recepcion', $fechaRecepcionDefault ?? now()->format('Y-m-d')) }}"
+                                               required
+                                               class="w-full rounded-xl border-slate-300 text-xs focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                                            Hora real de recepción <span class="text-rose-600">*</span>
+                                        </label>
+                                        <input type="time"
+                                               name="hora_recepcion"
+                                               value="{{ old('hora_recepcion', $horaRecepcionDefault ?? now()->format('H:i')) }}"
+                                               required
+                                               class="w-full rounded-xl border-slate-300 text-xs focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                                            Ubicación asignada en biblioteca <span class="text-rose-600">*</span>
+                                        </label>
+                                        <input type="text"
+                                               name="ubicacion_resguardo"
+                                               value="{{ old('ubicacion_resguardo') }}"
+                                               required
+                                               placeholder="Ej. Estante A-2, Gaveta de resguardo"
+                                               class="w-full rounded-xl border-slate-300 text-xs focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                                            Condición física del objeto al recuperarlo <span class="text-rose-600">*</span>
+                                        </label>
+                                        <textarea name="condicion_objeto"
+                                                  rows="2"
+                                                  required
+                                                  placeholder="Describe las condiciones físicas en que se recibe el objeto recuperado..."
+                                                  class="w-full rounded-xl border-slate-300 text-xs focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">{{ old('condicion_objeto') }}</textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                                            Observaciones de recepción (opcional)
+                                        </label>
+                                        <textarea name="observaciones"
+                                                  rows="2"
+                                                  placeholder="Notas adicionales sobre la entrega física en biblioteca..."
+                                                  class="w-full rounded-xl border-slate-300 text-xs focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">{{ old('observaciones') }}</textarea>
+                                    </div>
+                                </div>
+                                <div class="p-3.5 rounded-xl bg-white border border-orange-300">
+                                    <label class="flex items-start gap-2.5 cursor-pointer">
+                                        <input type="checkbox"
+                                               name="confirmacion_cotejo"
+                                               value="1"
+                                               required
+                                               class="mt-0.5 rounded border-orange-400 text-[#4E0B1B] focus:ring-[#4E0B1B]">
+                                        <span class="text-xs font-bold text-slate-800">
+                                            Confirmo que he recibido físicamente el objeto en biblioteca y que corresponde al reporte original. Esta recepción conserva el antecedente de la entrega anterior sin marcarla como correcta.
+                                        </span>
+                                    </label>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="submit"
+                                            class="px-5 py-2.5 rounded-xl bg-orange-700 hover:bg-orange-800 text-white text-xs font-bold shadow-sm transition">
+                                        Registrar recepción física y confirmar recuperación
+                                    </button>
+                                </div>
+                            </form>
+                        @else
+                            <form method="POST"
+                                  action="{{ route('admin.incidencias.cerrar', $incidencia->id) }}"
+                                  class="rounded-2xl bg-emerald-50/60 border border-emerald-200 p-5 space-y-4">
+                                @csrf
+                                <div class="space-y-1">
+                                    <span class="inline-block px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[11px] font-extrabold">
+                                        Recuperación física en biblioteca confirmada
+                                    </span>
+                                    <h3 class="text-sm font-extrabold text-slate-900">
+                                        Cerrar incidencia registrando resultado, motivo, fecha y responsable
+                                    </h3>
+                                    <p class="text-xs text-slate-600">
+                                        Al haberse confirmado la recepción física del objeto en biblioteca, puedes cerrar la incidencia conservando todos los antecedentes y evidencias privadas del caso.
+                                    </p>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                                            Resultado de la resolución <span class="text-rose-600">*</span>
+                                        </label>
+                                        <input type="text"
+                                               name="resultado"
+                                               required
+                                               value="Objeto recuperado físicamente en biblioteca — Incidencia cerrada"
+                                               class="w-full rounded-xl border-emerald-300 text-xs focus:border-emerald-700 focus:ring-emerald-700">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                                            Motivo de cierre <span class="text-rose-600">*</span>
+                                        </label>
+                                        <input type="text"
+                                               name="motivo"
+                                               required
+                                               placeholder="Indica el motivo de cierre tras confirmar la recepción física en biblioteca..."
+                                               class="w-full rounded-xl border-emerald-300 text-xs focus:border-emerald-700 focus:ring-emerald-700">
+                                    </div>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="submit"
+                                            class="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition">
+                                        Cerrar incidencia con recuperación confirmada
+                                    </button>
+                                </div>
+                            </form>
+                        @endif
+                    </div>
+                @endif
+
+                {{-- SECCIÓN CA-09: CASO SIN SOLUCIÓN («Sin resolver y canalizada») --}}
+                <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 sm:p-8 space-y-5">
+                    <div class="border-b border-slate-100 pb-4">
+                        <span class="inline-block px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-800 text-[11px] font-extrabold mb-1">
+                            Caso sin solución
+                        </span>
+                        <h2 class="text-lg font-extrabold text-slate-900">
+                            Marcar incidencia como «Sin resolver y canalizada»
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Si no es posible aclarar el caso ni recuperar físicamente el objeto, registra la canalización institucional con motivo, destino y observaciones de seguimiento. El objeto no se marcará como «Devuelto» ni como «Disponible», y el sistema no impondrá sanciones automáticas.
+                        </p>
+                    </div>
+
+                    <form method="POST"
+                          action="{{ route('admin.incidencias.canalizar', $incidencia->id) }}"
+                          class="space-y-4">
+                        @csrf
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                    Destino o instancia institucional de canalización <span class="text-rose-600">*</span>
+                                </label>
+                                <input type="text"
+                                       name="responsable_canalizacion"
+                                       value="{{ old('responsable_canalizacion') }}"
+                                       required
+                                       placeholder="Ej. Subdirección de Servicios Administrativos / Jefatura de Centro de Información"
+                                       class="w-full rounded-xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                    Motivo por el que no fue posible resolver ni recuperar <span class="text-rose-600">*</span>
+                                </label>
+                                <input type="text"
+                                       name="motivo"
+                                       value="{{ old('motivo') }}"
+                                       required
+                                       placeholder="Describe el motivo por el cual el caso se canaliza sin resolver..."
+                                       class="w-full rounded-xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                Observaciones de seguimiento institucional <span class="text-rose-600">*</span>
+                            </label>
+                            <textarea name="observaciones_seguimiento"
+                                      rows="2"
+                                      required
+                                      placeholder="Registra las gestiones realizadas, antecedentes que se turnan y observaciones de seguimiento..."
+                                      class="w-full rounded-2xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">{{ old('observaciones_seguimiento') }}</textarea>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                    class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold shadow-sm transition">
+                                Marcar como «Sin resolver y canalizada»
+                            </button>
+                        </div>
+                    </form>
                 </div>
             @endif
 
