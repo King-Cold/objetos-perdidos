@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Incidencia extends Model
 {
@@ -24,13 +25,22 @@ class Incidencia extends Model
         'publicacion_id',
         'devolucion_id',
         'user_id',
+        'responsable_revision_id',
+        'cerrada_por_id',
         'motivo',
         'estado',
+        'resultado',
+        'motivo_resolucion',
+        'solicitud_recuperacion',
         'fecha_apertura',
+        'fecha_revision',
+        'fecha_cierre',
     ];
 
     protected $casts = [
         'fecha_apertura' => 'datetime',
+        'fecha_revision' => 'datetime',
+        'fecha_cierre' => 'datetime',
     ];
 
     public function publicacion(): BelongsTo
@@ -48,6 +58,23 @@ class Incidencia extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function responsableRevision(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'responsable_revision_id');
+    }
+
+    public function cerradaPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cerrada_por_id');
+    }
+
+    public function observaciones(): HasMany
+    {
+        return $this->hasMany(IncidenciaObservacion::class, 'incidencia_id')
+            ->orderBy('fecha_registro', 'asc')
+            ->orderBy('id', 'asc');
+    }
+
     public function isActiva(): bool
     {
         return !in_array($this->estado, [self::ESTADO_CERRADA, self::ESTADO_SIN_RESOLVER_CANALIZADA], true);
@@ -63,13 +90,31 @@ class Incidencia extends Model
         return $this->formatMeridaDateTime($fecha);
     }
 
+    public function getFechaRevisionTextoAttribute(): ?string
+    {
+        if (!$this->fecha_revision) {
+            return null;
+        }
+
+        return $this->formatMeridaDateTime($this->fecha_revision);
+    }
+
+    public function getFechaCierreTextoAttribute(): ?string
+    {
+        if (!$this->fecha_cierre) {
+            return null;
+        }
+
+        return $this->formatMeridaDateTime($this->fecha_cierre);
+    }
+
     public function getSeguimientoAutorizadoAttribute(): string
     {
         return match ($this->estado) {
             self::ESTADO_ABIERTA => 'Incidencia abierta en revisión administrativa',
-            self::ESTADO_ESPERA_CORRECCION => 'En espera de corrección de datos de entrega',
-            self::ESTADO_ESPERA_RECUPERACION => 'En seguimiento para recuperación física del objeto',
-            self::ESTADO_SIN_RESOLVER_CANALIZADA => 'Incidencia canalizada para atención institucional',
+            self::ESTADO_ESPERA_CORRECCION => 'En espera de corrección',
+            self::ESTADO_ESPERA_RECUPERACION => 'En espera de recuperación',
+            self::ESTADO_SIN_RESOLVER_CANALIZADA => 'Sin resolver y canalizada',
             self::ESTADO_CERRADA => 'Duda o incidencia de entrega resuelta',
             default => 'En revisión administrativa por duda de entrega',
         };
@@ -87,4 +132,3 @@ class Incidencia extends Model
         return "{$fecha} • {$hora} {$ampm}";
     }
 }
-

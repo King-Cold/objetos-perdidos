@@ -60,7 +60,15 @@
                         </a>
                         <a href="{{ route('admin.incidencias.index', ['estado' => \App\Models\Incidencia::ESTADO_ABIERTA]) }}"
                            class="px-3.5 py-1.5 rounded-full text-xs font-bold border transition {{ $filtroEstado === \App\Models\Incidencia::ESTADO_ABIERTA ? 'bg-rose-700 text-white border-rose-700' : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100' }}">
-                            Abiertas ({{ $totalActivas }})
+                            Abiertas
+                        </a>
+                        <a href="{{ route('admin.incidencias.index', ['estado' => \App\Models\Incidencia::ESTADO_ESPERA_CORRECCION]) }}"
+                           class="px-3.5 py-1.5 rounded-full text-xs font-bold border transition {{ $filtroEstado === \App\Models\Incidencia::ESTADO_ESPERA_CORRECCION ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100' }}">
+                            En espera de corrección
+                        </a>
+                        <a href="{{ route('admin.incidencias.index', ['estado' => \App\Models\Incidencia::ESTADO_ESPERA_RECUPERACION]) }}"
+                           class="px-3.5 py-1.5 rounded-full text-xs font-bold border transition {{ $filtroEstado === \App\Models\Incidencia::ESTADO_ESPERA_RECUPERACION ? 'bg-orange-700 text-white border-orange-700' : 'bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100' }}">
+                            En espera de recuperación
                         </a>
                         <a href="{{ route('admin.incidencias.index', ['estado' => \App\Models\Incidencia::ESTADO_CERRADA]) }}"
                            class="px-3.5 py-1.5 rounded-full text-xs font-bold border transition {{ $filtroEstado === \App\Models\Incidencia::ESTADO_CERRADA ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' }}">
@@ -169,6 +177,16 @@
                                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                                     {{ $incidencia->estado }}
                                                 </span>
+                                            @elseif ($incidencia->estado === \App\Models\Incidencia::ESTADO_ESPERA_CORRECCION)
+                                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                                    {{ $incidencia->estado }}
+                                                </span>
+                                            @elseif ($incidencia->estado === \App\Models\Incidencia::ESTADO_ESPERA_RECUPERACION)
+                                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-xs font-bold">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                                                    {{ $incidencia->estado }}
+                                                </span>
                                             @else
                                                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold">
                                                     <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
@@ -201,4 +219,3 @@
         </div>
     </div>
 </x-app-layout>
-

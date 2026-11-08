@@ -36,7 +36,7 @@
                                 Panel Administrativo &bull; Biblioteca
                             </span>
                             <span class="px-2.5 py-0.5 rounded-full bg-tecnm-wine/10 text-[10px] font-bold text-tecnm-wine">
-                                HU-12 Verificación
+                                Verificación
                             </span>
                         </div>
                         <div class="flex flex-wrap items-baseline gap-2 sm:gap-3">
