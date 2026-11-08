@@ -48,7 +48,12 @@
                     {{-- Disponibilidad actual --}}
                     <div class="flex items-center justify-between">
                         <span class="text-slate-500 font-semibold text-[11px] uppercase tracking-wider">Disponibilidad:</span>
-                        @if ($publicacion->isDisponible())
+                        @if ($publicacion->isPublicacionExcepcionalVigente() || $publicacion->estado === \App\Models\Publicacion::ESTADO_DISPONIBLE_BIBLIOTECA)
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-bold border border-emerald-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                <span>Disponible en biblioteca</span>
+                            </span>
+                        @elseif ($publicacion->isDisponible())
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-bold border border-emerald-200">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                 <span>Disponible</span>

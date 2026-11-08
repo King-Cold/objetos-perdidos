@@ -32,7 +32,7 @@ class FotografiaController extends Controller
         $isAdmin = $user && method_exists($user, 'isAdmin') && $user->isAdmin();
         $isPublicPublished = method_exists($publicacion, 'isDisponible') 
             && $publicacion->isDisponible() 
-            && $publicacion->estado === 'Aprobada';
+            && in_array($publicacion->estado, ['Aprobada', 'Disponible en biblioteca'], true);
 
         if (! $isAuthor && ! $isAdmin && ! $isPublicPublished) {
             if (! $user) {

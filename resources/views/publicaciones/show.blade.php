@@ -23,8 +23,8 @@
             $nombreObjeto = $publicacion->nombre ?? $publicacion->titulo;
             $fechaPublicacion = $publicacion->fecha_publicacion;
             
-            // Fotografías aprobadas para publicación (HU-09.2): ordenadas con la principal primero
-            $fotosAprobadas = ($publicacion->estado === \App\Models\Publicacion::ESTADO_APROBADA && $publicacion->isDisponible())
+            // Fotografías aprobadas para publicación: ordenadas con la principal primero
+            $fotosAprobadas = (in_array($publicacion->estado, [\App\Models\Publicacion::ESTADO_APROBADA, \App\Models\Publicacion::ESTADO_DISPONIBLE_BIBLIOTECA], true) && $publicacion->isDisponible())
                 ? $publicacion->fotografias->sortByDesc('es_principal')->values()
                 : collect();
             $totalFotos = $fotosAprobadas->count();
@@ -318,7 +318,12 @@
                                         Disponibilidad actual
                                     </span>
                                     <div class="pt-0.5">
-                                        @if ($publicacion->isDisponible())
+                                        @if ($publicacion->isPublicacionExcepcionalVigente() || $publicacion->estado === \App\Models\Publicacion::ESTADO_DISPONIBLE_BIBLIOTECA)
+                                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                <span>Disponible en biblioteca</span>
+                                            </span>
+                                        @elseif ($publicacion->isDisponible())
                                             <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
                                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                                 <span>Disponible</span>

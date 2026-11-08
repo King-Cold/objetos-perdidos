@@ -272,6 +272,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::post('/incidencias/{id}/solicitar-correccion', [IncidenciaController::class, 'solicitarCorreccion'])->name('admin.incidencias.solicitar-correccion');
     Route::post('/incidencias/{id}/confirmar-entrega-incorrecta', [IncidenciaController::class, 'confirmarEntregaIncorrecta'])->name('admin.incidencias.confirmar-entrega-incorrecta');
     Route::post('/incidencias/{id}/recuperacion-fisica', [IncidenciaController::class, 'registrarRecuperacionFisica'])->name('admin.incidencias.recuperacion-fisica');
+    Route::post('/incidencias/{id}/publicacion-excepcional', [IncidenciaController::class, 'autorizarPublicacionExcepcional'])->name('admin.incidencias.publicacion-excepcional');
     Route::post('/incidencias/{id}/cerrar', [IncidenciaController::class, 'cerrarIncidencia'])->name('admin.incidencias.cerrar');
     Route::post('/incidencias/{id}/canalizar', [IncidenciaController::class, 'canalizarSinResolver'])->name('admin.incidencias.canalizar');
     Route::post('/reportes/{id}/incidencias', [IncidenciaController::class, 'store'])->name('admin.reportes.incidencias.store');

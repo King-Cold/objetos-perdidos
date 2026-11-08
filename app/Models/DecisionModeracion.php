@@ -18,6 +18,7 @@ class DecisionModeracion extends Model
     public const TIPO_RECEPCION_BIBLIOTECA = 'recepcion_biblioteca';
     public const TIPO_CAMBIO_UBICACION_BIBLIOTECA = 'cambio_ubicacion_biblioteca';
     public const TIPO_DEVOLUCION_BIBLIOTECA = 'devolucion_biblioteca';
+    public const TIPO_PUBLICACION_EXCEPCIONAL_BIBLIOTECA = 'publicacion_excepcional_biblioteca';
 
     protected $table = 'decisiones_moderacion';
 

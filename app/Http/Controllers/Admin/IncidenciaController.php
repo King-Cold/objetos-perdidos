@@ -82,6 +82,26 @@ class IncidenciaController extends Controller
             });
         }
 
+        if (Schema::hasTable('publicaciones')) {
+            Schema::table('publicaciones', function (Blueprint $table) {
+                if (!Schema::hasColumn('publicaciones', 'publicacion_excepcional_autorizada')) {
+                    $table->boolean('publicacion_excepcional_autorizada')->default(false)->after('tiene_incidencia');
+                }
+                if (!Schema::hasColumn('publicaciones', 'fecha_publicacion_excepcional')) {
+                    $table->dateTime('fecha_publicacion_excepcional')->nullable()->after('publicacion_excepcional_autorizada');
+                }
+                if (!Schema::hasColumn('publicaciones', 'fecha_vencimiento_excepcional')) {
+                    $table->dateTime('fecha_vencimiento_excepcional')->nullable()->after('fecha_publicacion_excepcional');
+                }
+                if (!Schema::hasColumn('publicaciones', 'autorizada_excepcional_por_id')) {
+                    $table->foreignId('autorizada_excepcional_por_id')->nullable()->after('fecha_vencimiento_excepcional')->constrained('users')->nullOnDelete();
+                }
+                if (!Schema::hasColumn('publicaciones', 'motivo_publicacion_excepcional')) {
+                    $table->text('motivo_publicacion_excepcional')->nullable()->after('autorizada_excepcional_por_id');
+                }
+            });
+        }
+
         if (!Schema::hasTable('incidencia_observaciones')) {
             Schema::create('incidencia_observaciones', function (Blueprint $table) {
                 $table->id();
@@ -438,6 +458,7 @@ class IncidenciaController extends Controller
             'entrega_incorrecta' => $this->confirmarEntregaIncorrecta($request, $id),
             'cerrar_incidencia' => $this->cerrarIncidencia($request, $id),
             'canalizar_sin_resolver' => $this->canalizarSinResolver($request, $id),
+            'autorizar_publicacion_excepcional' => $this->autorizarPublicacionExcepcional($request, $id),
             default => redirect()
                 ->route('admin.incidencias.show', $id)
                 ->withErrors(['decision' => 'Debes seleccionar una decisión de revisión válida.']),
@@ -897,12 +918,14 @@ class IncidenciaController extends Controller
             ]);
 
             // El objeto recuperado permanece bajo resguardo en biblioteca y fuera del muro público,
-            // conservando intacto el antecedente y la evidencia de la entrega incorrecta sin marcarla como correcta
+            // salvo que ya cuente con su publicación excepcional vigente de 14 días autorizada
             if ($publicacion) {
+                $esExcepcionalVigente = $publicacion->isPublicacionExcepcionalVigente();
+
                 $publicacion->update([
-                    'estado' => 'En resguardo',
+                    'estado' => $esExcepcionalVigente ? Publicacion::ESTADO_DISPONIBLE_BIBLIOTECA : 'En resguardo',
                     'situacion_resguardo' => 'En biblioteca',
-                    'disponible' => false,
+                    'disponible' => $esExcepcionalVigente,
                     'devolucion_en_proceso' => false,
                     'incidencia_abierta' => false,
                     'tiene_incidencia' => true,
@@ -1018,5 +1041,179 @@ class IncidenciaController extends Controller
         return redirect()
             ->route('admin.incidencias.show', $incidencia->id)
             ->with('status', 'La incidencia se marcó como «Sin resolver y canalizada» con su motivo, destino institucional, fecha, responsable y observaciones de seguimiento.');
+    }
+
+    /**
+     * CA-10 y CA-11: Autoriza una sola publicación excepcional de 14 días naturales como «Disponible en biblioteca»
+     * después de confirmar la recepción física en biblioteca y revisar el contenido del reporte.
+     * - Mantiene el mismo folio original.
+     * - Registra fecha especial de publicación y vencimiento excepcional (+14 días) independiente de fecha_primera_aprobacion.
+     * - Mantiene intacto el año de resguardo calculado desde la recepción en biblioteca.
+     * - Solo permite autorizar una única publicación excepcional por reporte recuperado.
+     */
+    public function autorizarPublicacionExcepcional(Request $request, $id): RedirectResponse
+    {
+        $incidencia = Incidencia::with([
+            'publicacion.recepcion',
+            'publicacion.incidencias',
+            'recepcion',
+            'devolucion',
+        ])->findOrFail($id);
+
+        $publicacion = $incidencia->publicacion;
+        if (!$publicacion) {
+            return redirect()
+                ->route('admin.incidencias.show', $incidencia->id)
+                ->with('error', 'No se encontró el reporte original vinculado a la incidencia.');
+        }
+
+        if ($incidencia->estado === Incidencia::ESTADO_SIN_RESOLVER_CANALIZADA) {
+            return redirect()
+                ->route('admin.incidencias.show', $incidencia->id)
+                ->with('error', 'No es posible autorizar una publicación excepcional para un caso marcado como «Sin resolver y canalizada».');
+        }
+
+        // 1. Verificar que el objeto haya sido recibido físicamente en biblioteca tras entrega incorrecta confirmada
+        $recepcion = $incidencia->recepcion ?? $publicacion->recepcion;
+        if (!$incidencia->hasRecuperacionFisicaConfirmada() || !$recepcion) {
+            return redirect()
+                ->route('admin.incidencias.show', $incidencia->id)
+                ->withErrors([
+                    'publicacion_excepcional' => 'Únicamente se puede autorizar la publicación excepcional después de haber confirmado la recepción física del objeto en biblioteca.',
+                ])
+                ->with('error', 'Únicamente se puede autorizar la publicación excepcional después de haber confirmado la recepción física del objeto en biblioteca.');
+        }
+
+        // 2. Verificar que no se haya autorizado previamente la única publicación excepcional permitida
+        if ((bool) $publicacion->publicacion_excepcional_autorizada) {
+            return redirect()
+                ->route('admin.incidencias.show', $incidencia->id)
+                ->withErrors([
+                    'publicacion_excepcional' => 'Este reporte ya utilizó su única publicación excepcional de 14 días como «Disponible en biblioteca». No se permite autorizar una segunda publicación excepcional.',
+                ])
+                ->with('error', 'Este reporte ya utilizó su única publicación excepcional de 14 días como «Disponible en biblioteca». No se permite autorizar una segunda publicación excepcional.');
+        }
+
+        // 3. Verificar que el objeto no haya sido devuelto ya desde biblioteca
+        if ($publicacion->estado === Publicacion::ESTADO_DEVUELTO || in_array($publicacion->estado_devolucion, ['Devuelto', 'Verificada'], true)) {
+            return redirect()
+                ->route('admin.incidencias.show', $incidencia->id)
+                ->withErrors([
+                    'publicacion_excepcional' => 'No es posible autorizar la publicación excepcional porque el objeto ya fue devuelto.',
+                ])
+                ->with('error', 'No es posible autorizar la publicación excepcional porque el objeto ya fue devuelto.');
+        }
+
+        // 4. Verificar que el año de resguardo calculado desde la recepción siga vigente
+        if ($recepcion->isAnualVencido()) {
+            return redirect()
+                ->route('admin.incidencias.show', $incidencia->id)
+                ->withErrors([
+                    'publicacion_excepcional' => 'No es posible autorizar la publicación excepcional porque el año de resguardo en biblioteca calculado desde la recepción ya venció.',
+                ])
+                ->with('error', 'No es posible autorizar la publicación excepcional porque el año de resguardo en biblioteca calculado desde la recepción ya venció.');
+        }
+
+        $motivoLimpio = trim((string) $request->input('motivo', ''));
+        $nombreLimpio = $request->has('nombre') ? trim((string) $request->input('nombre', '')) : trim((string) ($publicacion->nombre ?? $publicacion->titulo ?? ''));
+        $descripcionLimpia = $request->has('descripcion') ? trim((string) $request->input('descripcion', '')) : trim((string) ($publicacion->descripcion ?? ''));
+
+        $request->merge([
+            'motivo' => $motivoLimpio,
+            'nombre' => $nombreLimpio,
+            'descripcion' => $descripcionLimpia,
+        ]);
+
+        $request->validate(
+            [
+                'confirmacion_revision_contenido' => ['required', 'accepted'],
+                'motivo' => ['required', 'string', 'min:3', 'max:1500'],
+                'nombre' => ['required', 'string', 'min:3', 'max:120'],
+                'descripcion' => ['required', 'string', 'min:5', 'max:2000'],
+            ],
+            [
+                'confirmacion_revision_contenido.required' => 'Debes confirmar que revisaste el contenido de la publicación antes de autorizar su difusión excepcional.',
+                'confirmacion_revision_contenido.accepted' => 'Debes marcar la confirmación de revisión de contenido para autorizar la publicación excepcional.',
+                'motivo.required' => 'El motivo o dictamen de autorización de la publicación excepcional es obligatorio y no puede contener solo espacios.',
+                'motivo.min' => 'El motivo de autorización debe tener al menos 3 caracteres.',
+                'nombre.required' => 'El nombre del objeto revisado no puede estar vacío.',
+                'descripcion.required' => 'La descripción revisada del objeto no puede estar vacía.',
+            ]
+        );
+
+        $ahora = Carbon::now(Publicacion::TIMEZONE);
+        $vencimientoExcepcional = Publicacion::calcularFechaVencimiento($ahora);
+
+        DB::transaction(function () use (
+            $incidencia,
+            $publicacion,
+            $recepcion,
+            $motivoLimpio,
+            $nombreLimpio,
+            $descripcionLimpia,
+            $ahora,
+            $vencimientoExcepcional
+        ) {
+            // 1. Autorizar la única publicación excepcional de 14 días como «Disponible en biblioteca»
+            // conservando el mismo folio, sin alterar fecha_primera_aprobacion ni el año de resguardo de la recepción
+            $publicacion->update([
+                'nombre' => $nombreLimpio,
+                'titulo' => $nombreLimpio,
+                'descripcion' => $descripcionLimpia,
+                'estado' => Publicacion::ESTADO_DISPONIBLE_BIBLIOTECA,
+                'situacion_resguardo' => 'En biblioteca',
+                'disponible' => true,
+                'devolucion_en_proceso' => false,
+                'incidencia_abierta' => false,
+                'tiene_incidencia' => true,
+                'estado_devolucion' => 'Recuperado en biblioteca',
+                'publicacion_excepcional_autorizada' => true,
+                'fecha_publicacion_excepcional' => $ahora,
+                'fecha_vencimiento_excepcional' => $vencimientoExcepcional,
+                'autorizada_excepcional_por_id' => Auth::id(),
+                'motivo_publicacion_excepcional' => $motivoLimpio,
+            ]);
+
+            // 2. Si la incidencia seguía activa en «En espera de recuperación», cerrarla registrando la resolución
+            if ($incidencia->isActiva()) {
+                $incidencia->update([
+                    'recepcion_id' => $incidencia->recepcion_id ?? $recepcion->id,
+                    'recuperacion_confirmada' => true,
+                    'fecha_recuperacion' => $incidencia->fecha_recuperacion ?? $ahora,
+                    'estado' => Incidencia::ESTADO_CERRADA,
+                    'resultado' => 'Objeto recuperado en biblioteca — Publicación excepcional autorizada (14 días)',
+                    'motivo_resolucion' => $motivoLimpio,
+                    'responsable_revision_id' => $incidencia->responsable_revision_id ?? Auth::id(),
+                    'cerrada_por_id' => Auth::id(),
+                    'fecha_revision' => $incidencia->fecha_revision ?? $ahora,
+                    'fecha_cierre' => $ahora,
+                ]);
+            }
+
+            // 3. Registrar observación y decisión administrativa en el historial
+            $resumenFechas = "Folio conservado: {$publicacion->folio} • Fecha especial de publicación: {$ahora->format('d/m/Y h:i a')} • Vencimiento excepcional (14 días): {$vencimientoExcepcional->format('d/m/Y h:i a')} • Límite de 1 año de resguardo desde recepción: {$recepcion->fecha_limite_anual_texto}";
+
+            IncidenciaObservacion::create([
+                'incidencia_id' => $incidencia->id,
+                'user_id' => Auth::id(),
+                'tipo' => IncidenciaObservacion::TIPO_RESULTADO,
+                'medio_contacto' => 'Revisión administrativa de contenido en biblioteca',
+                'descripcion' => "Se autorizó la única publicación excepcional de 14 días naturales como «Disponible en biblioteca». Motivo: {$motivoLimpio}",
+                'resultado_obtenido' => $resumenFechas,
+                'fecha_registro' => $ahora,
+            ]);
+
+            DecisionModeracion::create([
+                'publicacion_id' => $publicacion->id,
+                'user_id' => Auth::id(),
+                'tipo_decision' => DecisionModeracion::TIPO_PUBLICACION_EXCEPCIONAL_BIBLIOTECA,
+                'motivo' => "Publicación excepcional única de 14 días autorizada como «Disponible en biblioteca» (Incidencia #{$incidencia->id}): {$motivoLimpio} • {$resumenFechas}",
+                'fecha_decision' => $ahora,
+            ]);
+        });
+
+        return redirect()
+            ->route('admin.incidencias.show', $incidencia->id)
+            ->with('status', "Se autorizó la publicación excepcional única de 14 días como «Disponible en biblioteca» para el folio {$publicacion->folio}, conservando su fecha de primera aprobación y el año de resguardo calculado desde la recepción.");
     }
 }

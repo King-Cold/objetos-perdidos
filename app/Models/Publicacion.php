@@ -21,6 +21,7 @@ class Publicacion extends Model
     public const ESTADO_CORRECCION_SOLICITADA = 'Corrección solicitada';
     public const ESTADO_CANCELADO = 'Cancelado';
     public const ESTADO_DEVUELTO = 'Devuelto';
+    public const ESTADO_DISPONIBLE_BIBLIOTECA = 'Disponible en biblioteca';
 
     public const RESGUARDO_AUTOR = 'En posesión del autor';
     public const RESGUARDO_CONFIRMADO = 'Bajo resguardo confirmado de biblioteca';
@@ -73,6 +74,11 @@ class Publicacion extends Model
         'fecha_cancelacion',
         'estado_devolucion',
         'tiene_incidencia',
+        'publicacion_excepcional_autorizada',
+        'fecha_publicacion_excepcional',
+        'fecha_vencimiento_excepcional',
+        'autorizada_excepcional_por_id',
+        'motivo_publicacion_excepcional',
     ];
 
     protected function casts(): array
@@ -90,6 +96,9 @@ class Publicacion extends Model
             'version' => 'integer',
             'fecha_cancelacion' => 'datetime',
             'tiene_incidencia' => 'boolean',
+            'publicacion_excepcional_autorizada' => 'boolean',
+            'fecha_publicacion_excepcional' => 'datetime',
+            'fecha_vencimiento_excepcional' => 'datetime',
         ];
     }
 
@@ -190,6 +199,11 @@ class Publicacion extends Model
         return $this->hasOne(Recepcion::class);
     }
 
+    public function autorizadaExcepcionalPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'autorizada_excepcional_por_id');
+    }
+
     public function recepciones(): HasMany
     {
         return $this->hasMany(Recepcion::class)
@@ -230,6 +244,10 @@ class Publicacion extends Model
 
     public function isVencida(): bool
     {
+        if ((bool) $this->publicacion_excepcional_autorizada) {
+            return $this->isPublicacionExcepcionalVencida();
+        }
+
         if ($this->fecha_vencimiento === null) {
             return false;
         }
@@ -240,6 +258,117 @@ class Publicacion extends Model
 
         return Carbon::now(self::TIMEZONE)
             ->greaterThanOrEqualTo($vencimiento);
+    }
+
+    /**
+     * Determina si el objeto recuperado físicamente en biblioteca tras una entrega incorrecta
+     * cumple todas las condiciones para autorizar una sola publicación excepcional de 14 días (CA-10).
+     */
+    public function puedeAutorizarPublicacionExcepcional(): bool
+    {
+        // Solo se permite autorizar UNA publicación excepcional por reporte
+        if ((bool) $this->publicacion_excepcional_autorizada) {
+            return false;
+        }
+
+        if ($this->estado === self::ESTADO_DEVUELTO || $this->isCancelado()) {
+            return false;
+        }
+
+        if (in_array($this->estado_devolucion, ['Devuelto', 'Verificada'], true)) {
+            return false;
+        }
+
+        // Debe contar con recepción física confirmada en biblioteca
+        $recepcion = $this->relationLoaded('recepcion')
+            ? $this->recepcion
+            : $this->recepcion()->first();
+
+        if (! $recepcion) {
+            return false;
+        }
+
+        // El año de resguardo calculado desde la recepción debe seguir vigente
+        if ($recepcion->isAnualVencido()) {
+            return false;
+        }
+
+        // Debe estar en resguardo de biblioteca
+        $sit = mb_strtolower(trim((string) $this->situacion_resguardo));
+        $enBiblioteca = $this->situacion_resguardo === 'En biblioteca'
+            || $this->situacion_resguardo === self::RESGUARDO_CONFIRMADO
+            || str_contains($sit, 'biblioteca')
+            || str_contains($sit, 'confirmado');
+
+        if (! $enBiblioteca) {
+            return false;
+        }
+
+        // Debe corresponder a una recuperación física confirmada en una incidencia
+        $tieneRecuperacionConfirmada = $this->relationLoaded('incidencias')
+            ? $this->incidencias->contains(fn (Incidencia $inc) => $inc->hasRecuperacionFisicaConfirmada())
+            : $this->incidencias()
+                ->where('recuperacion_confirmada', true)
+                ->whereNotNull('recepcion_id')
+                ->exists();
+
+        return $tieneRecuperacionConfirmada;
+    }
+
+    /**
+     * Determina si la publicación excepcional de 14 días ha vencido o si expiró el año de resguardo (CA-11).
+     */
+    public function isPublicacionExcepcionalVencida(): bool
+    {
+        if (! (bool) $this->publicacion_excepcional_autorizada || $this->fecha_vencimiento_excepcional === null) {
+            return false;
+        }
+
+        $vencimiento = $this->fecha_vencimiento_excepcional instanceof Carbon
+            ? $this->fecha_vencimiento_excepcional->copy()->setTimezone(self::TIMEZONE)
+            : Carbon::parse($this->fecha_vencimiento_excepcional, self::TIMEZONE);
+
+        if (Carbon::now(self::TIMEZONE)->greaterThanOrEqualTo($vencimiento)) {
+            return true;
+        }
+
+        $recepcion = $this->relationLoaded('recepcion')
+            ? $this->recepcion
+            : $this->recepcion()->first();
+
+        if ($recepcion && $recepcion->isAnualVencido()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Determina si la publicación excepcional de 14 días como «Disponible en biblioteca» se encuentra activa y vigente (CA-10, CA-11).
+     */
+    public function isPublicacionExcepcionalVigente(): bool
+    {
+        if (! (bool) $this->publicacion_excepcional_autorizada) {
+            return false;
+        }
+
+        if (! (bool) $this->disponible || (bool) $this->incidencia_abierta || (bool) $this->devolucion_en_proceso) {
+            return false;
+        }
+
+        if ($this->estado === self::ESTADO_DEVUELTO || $this->isCancelado()) {
+            return false;
+        }
+
+        if (in_array($this->estado_devolucion, ['Pendiente de verificación', 'Verificada', 'En incidencia', 'Devuelto'], true)) {
+            return false;
+        }
+
+        if ($this->fecha_vencimiento_excepcional === null) {
+            return false;
+        }
+
+        return ! $this->isPublicacionExcepcionalVencida();
     }
 
     /**
@@ -345,6 +474,10 @@ class Publicacion extends Model
      */
     public function getDisponibilidadTextoAttribute(): string
     {
+        if ($this->isPublicacionExcepcionalVigente()) {
+            return 'Disponible en biblioteca';
+        }
+
         if ($this->isVencida()) {
             return 'Expirada';
         }
@@ -430,6 +563,10 @@ class Publicacion extends Model
 
     public function hasRestriccionPublicacion(): bool
     {
+        if ($this->isPublicacionExcepcionalVigente()) {
+            return false;
+        }
+
         return $this->isVencida()
             || (bool) $this->devolucion_en_proceso
             || (bool) $this->incidencia_abierta
@@ -441,6 +578,10 @@ class Publicacion extends Model
 
     public function isDisponible(): bool
     {
+        if ($this->isPublicacionExcepcionalVigente()) {
+            return true;
+        }
+
         return (bool) $this->disponible
             && $this->estado === self::ESTADO_APROBADA
             && ! $this->hasRestriccionPublicacion();
@@ -450,19 +591,12 @@ class Publicacion extends Model
     {
         // En base de datos SQLite / MySQL, fecha_vencimiento se almacena en UTC según la convención del sistema
         $ahoraUtc = Carbon::now(self::TIMEZONE)->setTimezone(config('app.timezone', 'UTC'));
+        $hoyMerida = Carbon::now(self::TIMEZONE)->toDateString();
+        $soportaExcepcional = \Illuminate\Support\Facades\Schema::hasColumn('publicaciones', 'publicacion_excepcional_autorizada');
 
         return $query->where('disponible', true)
-            ->where('estado', self::ESTADO_APROBADA)
-            ->where(function ($q) use ($ahoraUtc) {
-                $q->whereNull('fecha_vencimiento')
-                    ->orWhere('fecha_vencimiento', '>', $ahoraUtc);
-            })
             ->where('devolucion_en_proceso', false)
             ->where('incidencia_abierta', false)
-            ->where(function ($q) {
-                $q->whereNull('tiene_incidencia')
-                    ->orWhere('tiene_incidencia', false);
-            })
             ->where(function ($q) {
                 $q->whereNull('estado_devolucion')
                     ->orWhereNotIn('estado_devolucion', [
@@ -471,6 +605,33 @@ class Publicacion extends Model
                         'En incidencia',
                         'Devuelto',
                     ]);
+            })
+            ->where(function ($outer) use ($ahoraUtc, $hoyMerida, $soportaExcepcional) {
+                // 1. Publicaciones ordinarias aprobadas y vigentes
+                $outer->where(function ($ord) use ($ahoraUtc) {
+                    $ord->where('estado', self::ESTADO_APROBADA)
+                        ->where(function ($q) use ($ahoraUtc) {
+                            $q->whereNull('fecha_vencimiento')
+                                ->orWhere('fecha_vencimiento', '>', $ahoraUtc);
+                        })
+                        ->where(function ($q) {
+                            $q->whereNull('tiene_incidencia')
+                                ->orWhere('tiene_incidencia', false);
+                        });
+                });
+
+                // 2. Publicaciones excepcionales de 14 días como «Disponible en biblioteca» tras recuperación física
+                if ($soportaExcepcional) {
+                    $outer->orWhere(function ($exc) use ($ahoraUtc, $hoyMerida) {
+                        $exc->where('publicacion_excepcional_autorizada', true)
+                            ->whereIn('estado', [self::ESTADO_DISPONIBLE_BIBLIOTECA, self::ESTADO_APROBADA])
+                            ->whereNotNull('fecha_vencimiento_excepcional')
+                            ->where('fecha_vencimiento_excepcional', '>', $ahoraUtc)
+                            ->whereHas('recepcion', function ($recQ) use ($hoyMerida) {
+                                $recQ->whereDate('fecha_limite_anual', '>=', $hoyMerida);
+                            });
+                    });
+                }
             });
     }
 
@@ -557,9 +718,11 @@ class Publicacion extends Model
      */
     public function getFechaPublicacionAttribute(): ?Carbon
     {
-        $fecha = $this->fecha_primera_aprobacion
-            ?? $this->fecha_aprobacion
-            ?? $this->created_at;
+        $fecha = ($this->publicacion_excepcional_autorizada && $this->fecha_publicacion_excepcional)
+            ? $this->fecha_publicacion_excepcional
+            : ($this->fecha_primera_aprobacion
+                ?? $this->fecha_aprobacion
+                ?? $this->created_at);
 
         if ($fecha === null) {
             return null;
@@ -570,6 +733,16 @@ class Publicacion extends Model
 
     public function getVigenciaTextoAttribute(): string
     {
+        if ((bool) $this->publicacion_excepcional_autorizada && $this->fecha_vencimiento_excepcional) {
+            if ($this->isPublicacionExcepcionalVencida()) {
+                return 'Publicación excepcional vencida el '
+                    . $this->fecha_vencimiento_excepcional->format('d/m/Y');
+            }
+
+            return 'Disponible en biblioteca hasta el '
+                . $this->fecha_vencimiento_excepcional->format('d/m/Y');
+        }
+
         if (! $this->fecha_primera_aprobacion) {
             return 'Aún no inicia su vigencia';
         }
@@ -910,7 +1083,12 @@ class Publicacion extends Model
             if (str_contains($sit, 'pendiente') || str_contains($sit, 'solicitud')) {
                 return false;
             }
-            if ($this->situacion_resguardo === self::RESGUARDO_CONFIRMADO || str_contains($sit, 'confirmado')) {
+            if (
+                $this->situacion_resguardo === self::RESGUARDO_CONFIRMADO
+                || $this->situacion_resguardo === 'En biblioteca'
+                || (bool) $this->publicacion_excepcional_autorizada
+                || str_contains($sit, 'confirmado')
+            ) {
                 return true;
             }
 
@@ -1179,6 +1357,19 @@ class Publicacion extends Model
                         'color' => 'indigo',
                         'orden_prioridad' => 37,
                     ]);
+                } elseif ($tipoDecision === DecisionModeracion::TIPO_PUBLICACION_EXCEPCIONAL_BIBLIOTECA || $tipoDecision === 'publicacion_excepcional_biblioteca') {
+                    $eventos->push([
+                        'tipo' => 'Publicación excepcional en biblioteca',
+                        'tipo_slug' => 'publicacion_excepcional',
+                        'fecha' => $fechaDecision,
+                        'fecha_hora_texto' => $this->formatearFechaHora($fechaDecision),
+                        'responsable' => $responsableDecision,
+                        'motivo' => ! empty($decision->motivo)
+                            ? $decision->motivo
+                            : 'Publicación excepcional única de 14 días naturales como «Disponible en biblioteca» tras recuperación física.',
+                        'color' => 'emerald',
+                        'orden_prioridad' => 65,
+                    ]);
                 } elseif (str_contains(mb_strtolower($tipoDecision), 'incidencia')) {
                     $eventos->push([
                         'tipo' => 'Incidencia',
@@ -1353,6 +1544,24 @@ class Publicacion extends Model
                     : 'Reporte cancelado.',
                 'color' => 'slate',
                 'orden_prioridad' => 70,
+            ]);
+        }
+
+        // 10. EVENTO: VENCIMIENTO DE PUBLICACIÓN EXCEPCIONAL (si los 14 días excepcionales vencieron)
+        if ((bool) $this->publicacion_excepcional_autorizada && $this->fecha_vencimiento_excepcional && $this->isPublicacionExcepcionalVencida()) {
+            $fechaVencExc = $this->fecha_vencimiento_excepcional instanceof Carbon
+                ? $this->fecha_vencimiento_excepcional
+                : Carbon::parse($this->fecha_vencimiento_excepcional, self::TIMEZONE);
+
+            $eventos->push([
+                'tipo' => 'Vencimiento de publicación excepcional',
+                'tipo_slug' => 'vencimiento_excepcional',
+                'fecha' => $fechaVencExc,
+                'fecha_hora_texto' => $this->formatearFechaHora($fechaVencExc),
+                'responsable' => 'Sistema institucional',
+                'motivo' => 'Término del periodo excepcional de 14 días naturales como «Disponible en biblioteca». La publicación se retira del muro conservando el objeto en el inventario de biblioteca.',
+                'color' => 'slate',
+                'orden_prioridad' => 68,
             ]);
         }
 

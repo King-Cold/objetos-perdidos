@@ -226,7 +226,7 @@
                         </div>
                         <div>
                             <dt class="text-slate-500">Disponibilidad general</dt>
-                            <dd class="font-semibold text-rose-700 mt-0.5">{{ $pub && $pub->isDisponible() ? 'Disponible' : 'Fuera del muro' }}</dd>
+                            <dd class="font-semibold {{ $pub && $pub->isDisponible() ? 'text-emerald-700' : 'text-rose-700' }} mt-0.5">{{ $pub ? $pub->disponibilidad_texto : 'Fuera del muro' }}</dd>
                         </div>
                     </dl>
                 </div>
@@ -723,6 +723,168 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            @endif
+
+            {{-- PUBLICACIÓN EXCEPCIONAL ÚNICA DE 14 DÍAS TRAS RECUPERACIÓN EN BIBLIOTECA --}}
+            @if ($pub && ($incidencia->hasRecuperacionFisicaConfirmada() || $recepcionVinculada))
+                <div class="bg-white rounded-3xl border border-emerald-200 shadow-sm p-6 sm:p-8 space-y-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
+                        <div>
+                            <span class="inline-block px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[11px] font-extrabold mb-1">
+                                Difusión excepcional tras recuperación en biblioteca
+                            </span>
+                            <h2 class="text-lg font-extrabold text-slate-900">
+                                Publicación excepcional única de 14 días como «Disponible en biblioteca»
+                            </h2>
+                            <p class="text-xs text-slate-600 mt-0.5">
+                                Después de confirmar la recepción física y revisar el contenido, el administrador puede autorizar una sola publicación excepcional de 14 días manteniendo el mismo folio, una fecha especial independiente de la primera aprobación y el año de resguardo calculado desde la recepción.
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 shrink-0">
+                            @if ($recepcionVinculada)
+                                <a href="{{ route('admin.inventario.show', $recepcionVinculada->id) }}"
+                                   class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition">
+                                    Ver en inventario de biblioteca
+                                </a>
+                            @endif
+                            @if ($pub->puedeRegistrarDevolucionDesdeBiblioteca())
+                                <a href="{{ route('admin.devoluciones-biblioteca.create', $pub->id) }}"
+                                   class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#4E0B1B] hover:bg-[#3A0814] text-white text-xs font-bold shadow-sm transition">
+                                    Registrar devolución desde biblioteca
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+
+                    @if ((bool) $pub->publicacion_excepcional_autorizada)
+                        <div class="rounded-2xl bg-emerald-50/70 border border-emerald-200 p-5 space-y-4">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center gap-2">
+                                    @if ($pub->isPublicacionExcepcionalVigente())
+                                        <span class="px-3 py-1 rounded-full bg-emerald-600 text-white text-xs font-extrabold">
+                                            Publicación excepcional vigente: «Disponible en biblioteca»
+                                        </span>
+                                    @elseif ($pub->estado === \App\Models\Publicacion::ESTADO_DEVUELTO)
+                                        <span class="px-3 py-1 rounded-full bg-slate-800 text-white text-xs font-extrabold">
+                                            Objeto devuelto desde biblioteca (nuevo evento de devolución)
+                                        </span>
+                                    @else
+                                        <span class="px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-extrabold">
+                                            Publicación excepcional vencida — Retirada del muro (permanece en inventario de biblioteca)
+                                        </span>
+                                    @endif
+                                </div>
+                                <span class="text-xs font-semibold text-emerald-900">
+                                    Única publicación excepcional utilizada (1 de 1)
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                                <div class="p-3 rounded-xl bg-white border border-emerald-200/80">
+                                    <span class="text-slate-500 block">Folio original conservado</span>
+                                    <strong class="font-mono text-slate-900 text-sm">{{ $pub->folio }}</strong>
+                                </div>
+                                <div class="p-3 rounded-xl bg-white border border-emerald-200/80">
+                                    <span class="text-slate-500 block">Fecha original de 1.ª aprobación</span>
+                                    <strong class="text-slate-900">{{ $pub->fecha_primera_aprobacion ? $pub->fecha_primera_aprobacion->format('d/m/Y • h:i a') : 'Conservada sin cambios' }}</strong>
+                                </div>
+                                <div class="p-3 rounded-xl bg-white border border-emerald-200/80">
+                                    <span class="text-slate-500 block">Fecha especial y vencimiento (14 días)</span>
+                                    <strong class="text-emerald-900 block">Inicio: {{ $pub->fecha_publicacion_excepcional ? $pub->fecha_publicacion_excepcional->format('d/m/Y • h:i a') : '-' }}</strong>
+                                    <span class="text-slate-700 font-semibold">Vence: {{ $pub->fecha_vencimiento_excepcional ? $pub->fecha_vencimiento_excepcional->format('d/m/Y • h:i a') : '-' }}</span>
+                                </div>
+                                <div class="p-3 rounded-xl bg-white border border-emerald-200/80">
+                                    <span class="text-slate-500 block">Año de resguardo desde recepción</span>
+                                    <strong class="text-slate-900">{{ $recepcionVinculada ? $recepcionVinculada->fecha_limite_anual_texto : '-' }}</strong>
+                                </div>
+                            </div>
+
+                            @if ($pub->motivo_publicacion_excepcional)
+                                <div class="text-xs text-slate-800 pt-1">
+                                    <strong>Dictamen de revisión de contenido:</strong> {{ $pub->motivo_publicacion_excepcional }}
+                                </div>
+                            @endif
+                        </div>
+                    @elseif ($pub->puedeAutorizarPublicacionExcepcional())
+                        <form method="POST"
+                              action="{{ route('admin.incidencias.publicacion-excepcional', $incidencia->id) }}"
+                              class="rounded-2xl bg-slate-50 border border-slate-200 p-5 space-y-4">
+                            @csrf
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-white p-3.5 rounded-xl border border-slate-200">
+                                <div>
+                                    <span class="text-slate-500 block">Folio institucional que se conserva:</span>
+                                    <strong class="font-mono text-slate-900">{{ $pub->folio }}</strong>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block">1.ª aprobación original (no se altera):</span>
+                                    <strong class="text-slate-900">{{ $pub->fecha_primera_aprobacion ? $pub->fecha_primera_aprobacion->format('d/m/Y • h:i a') : 'Registrada' }}</strong>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block">Año de resguardo desde recepción:</span>
+                                    <strong class="text-slate-900">{{ $recepcionVinculada ? $recepcionVinculada->fecha_limite_anual_texto : '-' }}</strong>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                                        Nombre del objeto revisado <span class="text-rose-600">*</span>
+                                    </label>
+                                    <input type="text"
+                                           name="nombre"
+                                           value="{{ old('nombre', $pub->nombre ?? $pub->titulo) }}"
+                                           required
+                                           class="w-full rounded-xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                                        Motivo / Dictamen de autorización excepcional <span class="text-rose-600">*</span>
+                                    </label>
+                                    <input type="text"
+                                           name="motivo"
+                                           value="{{ old('motivo') }}"
+                                           required
+                                           placeholder="Indica el dictamen tras revisar el contenido y confirmar la recepción en biblioteca..."
+                                           class="w-full rounded-xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                                    Descripción del objeto revisada para el muro <span class="text-rose-600">*</span>
+                                </label>
+                                <textarea name="descripcion"
+                                          rows="2"
+                                          required
+                                          class="w-full rounded-xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">{{ old('descripcion', $pub->descripcion) }}</textarea>
+                            </div>
+
+                            <div class="p-3.5 rounded-xl bg-white border border-emerald-300">
+                                <label class="flex items-start gap-2.5 cursor-pointer">
+                                    <input type="checkbox"
+                                           name="confirmacion_revision_contenido"
+                                           value="1"
+                                           required
+                                           class="mt-0.5 rounded border-emerald-400 text-[#4E0B1B] focus:ring-[#4E0B1B]">
+                                    <span class="text-xs font-bold text-slate-800">
+                                        Confirmo que el objeto fue recibido físicamente en biblioteca y que he revisado el contenido de la publicación para autorizar su única difusión excepcional de 14 días como «Disponible en biblioteca».
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div class="flex justify-end">
+                                <button type="submit"
+                                        class="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition">
+                                    Autorizar única publicación excepcional de 14 días («Disponible en biblioteca»)
+                                </button>
+                            </div>
+                        </form>
+                    @else
+                        <div class="rounded-2xl bg-slate-50 border border-slate-200 p-4 text-xs text-slate-600">
+                            No es posible autorizar una publicación excepcional en este momento (verifica que el año de resguardo desde la recepción siga vigente y que el objeto no haya sido devuelto ya desde biblioteca).
+                        </div>
+                    @endif
                 </div>
             @endif
 

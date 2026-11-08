@@ -50,6 +50,26 @@ class RecepcionController extends Controller
                 $table->foreignId('incidencia_id')->nullable()->after('publicacion_id')->constrained('incidencias')->nullOnDelete();
             });
         }
+
+        if (Schema::hasTable('publicaciones')) {
+            Schema::table('publicaciones', function (Blueprint $table) {
+                if (!Schema::hasColumn('publicaciones', 'publicacion_excepcional_autorizada')) {
+                    $table->boolean('publicacion_excepcional_autorizada')->default(false)->after('tiene_incidencia');
+                }
+                if (!Schema::hasColumn('publicaciones', 'fecha_publicacion_excepcional')) {
+                    $table->dateTime('fecha_publicacion_excepcional')->nullable()->after('publicacion_excepcional_autorizada');
+                }
+                if (!Schema::hasColumn('publicaciones', 'fecha_vencimiento_excepcional')) {
+                    $table->dateTime('fecha_vencimiento_excepcional')->nullable()->after('fecha_publicacion_excepcional');
+                }
+                if (!Schema::hasColumn('publicaciones', 'autorizada_excepcional_por_id')) {
+                    $table->foreignId('autorizada_excepcional_por_id')->nullable()->after('fecha_vencimiento_excepcional')->constrained('users')->nullOnDelete();
+                }
+                if (!Schema::hasColumn('publicaciones', 'motivo_publicacion_excepcional')) {
+                    $table->text('motivo_publicacion_excepcional')->nullable()->after('autorizada_excepcional_por_id');
+                }
+            });
+        }
     }
 
     /**
