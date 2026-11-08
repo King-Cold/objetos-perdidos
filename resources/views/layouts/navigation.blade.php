@@ -40,6 +40,10 @@
                             {{ __('Inventario de Biblioteca') }}
                         </x-nav-link>
 
+                        <x-nav-link :href="route('admin.incidencias.index')" :active="request()->routeIs('admin.incidencias.*')">
+                            {{ __('Incidencias') }}
+                        </x-nav-link>
+
                         <x-nav-link :href="route('avisos.index')" :active="request()->routeIs('avisos.*')">
                             {{ __('Avisos') }}
                             @if (Auth::user()->avisos_no_leidos_count > 0)

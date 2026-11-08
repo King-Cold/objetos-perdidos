@@ -196,6 +196,12 @@
                                                 </span>
                                             @endif
 
+                                            @if ($rep->incidencia_abierta || $rep->incidenciaActiva)
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">
+                                                    <span>Seguimiento de incidencia: {{ $rep->incidenciaActiva ? $rep->incidenciaActiva->estado : 'Abierta' }} — {{ $rep->incidenciaActiva ? $rep->incidenciaActiva->seguimiento_autorizado : 'Incidencia abierta en revisión administrativa' }}</span>
+                                                </span>
+                                            @endif
+
                                             @if ($rep->correspondeEntregaBiblioteca())
                                                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
                                                     <svg class="w-3 h-3 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">

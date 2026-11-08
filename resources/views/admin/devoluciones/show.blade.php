@@ -63,6 +63,20 @@
                                 </svg>
                                 <span>Ver historial</span>
                             </a>
+                            @php
+                                $incidenciaExistente = $publicacion->incidencias()->first();
+                            @endphp
+                            @if ($incidenciaExistente)
+                                <a href="{{ route('admin.incidencias.show', $incidenciaExistente->id) }}"
+                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-bold transition-all shadow-2xs">
+                                    <span>Ver incidencia #{{ $incidenciaExistente->id }}</span>
+                                </a>
+                            @elseif ($publicacion->estado === \App\Models\Publicacion::ESTADO_DEVUELTO)
+                                <a href="{{ route('admin.incidencias.create', ['publicacionId' => $publicacion->id, 'devolucion_id' => $devolucion->id]) }}"
+                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-bold transition-all shadow-2xs">
+                                    <span>Abrir incidencia</span>
+                                </a>
+                            @endif
                         @endif
 
                         <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider shadow-2xs

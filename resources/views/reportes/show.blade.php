@@ -27,6 +27,35 @@
     <div class="py-8">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
+            {{-- Seguimiento autorizado para el autor cuando existe una incidencia abierta (HU-17 / Subtarea 1) --}}
+            @if ($publicacion->incidencia_abierta || $publicacion->incidenciaActiva)
+                @php
+                    $incActiva = $publicacion->incidenciaActiva;
+                @endphp
+                <div class="p-4 sm:p-5 rounded-2xl bg-rose-50/70 border border-rose-200 shadow-xs">
+                    <div class="flex items-start gap-3">
+                        <div class="p-2 rounded-xl bg-rose-100 text-rose-800 shrink-0 mt-0.5">
+                            <svg class="w-5 h-5 text-rose-800" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 space-y-1">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <h3 class="text-sm font-black text-rose-950">
+                                    Seguimiento autorizado: {{ $incActiva ? $incActiva->seguimiento_autorizado : 'Incidencia abierta en revisión administrativa' }}
+                                </h3>
+                                <span class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-900 text-[11px] font-bold">
+                                    Estado de seguimiento: {{ $incActiva ? $incActiva->estado : 'Abierta' }}
+                                </span>
+                            </div>
+                            <p class="text-xs text-rose-900 leading-relaxed">
+                                Reporte {{ $publicacion->folio }} ({{ $publicacion->nombre ?? $publicacion->titulo }}): El personal de biblioteca abrió un seguimiento preventivo para aclarar una duda relacionada con la entrega de este objeto.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <!-- Observaciones Administrativas de Biblioteca (CA-07, CA-08) -->
             @if ($publicacion->isEnCorreccion() && ($publicacion->motivo_correccion || $publicacion->observaciones_admin || $publicacion->observaciones))
                 <div class="p-4 sm:p-5 rounded-2xl bg-amber-50 border border-amber-300 shadow-xs">

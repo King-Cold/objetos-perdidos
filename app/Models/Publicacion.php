@@ -169,6 +169,22 @@ class Publicacion extends Model
             ->orderBy('id', 'desc');
     }
 
+    public function incidencias(): HasMany
+    {
+        return $this->hasMany(Incidencia::class, 'publicacion_id')
+            ->orderBy('id', 'desc');
+    }
+
+    public function incidenciaActiva(): HasOne
+    {
+        return $this->hasOne(Incidencia::class, 'publicacion_id')
+            ->whereNotIn('estado', [
+                Incidencia::ESTADO_CERRADA,
+                Incidencia::ESTADO_SIN_RESOLVER_CANALIZADA,
+            ])
+            ->latestOfMany();
+    }
+
     public function recepcion(): HasOne
     {
         return $this->hasOne(Recepcion::class);

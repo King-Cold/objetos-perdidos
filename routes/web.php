@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DevolucionBibliotecaController;
+use App\Http\Controllers\Admin\IncidenciaController;
 use App\Http\Controllers\Admin\InventarioController;
 use App\Http\Controllers\Admin\ModeracionReporteController;
 use App\Http\Controllers\Admin\RecepcionController;
@@ -259,6 +260,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
     // Historial del objeto desde apartados de gestión (HU-13 / Tarea 1)
     Route::get('/reportes/{id}/historial', [HistorialController::class, 'show'])->name('admin.reportes.historial');
+
+    // HU-17: Gestión de incidencias y dudas de entrega (Subtarea 1: Apertura y listado administrativo)
+    Route::get('/incidencias', [IncidenciaController::class, 'index'])->name('admin.incidencias.index');
+    Route::get('/incidencias/crear/{publicacionId?}', [IncidenciaController::class, 'create'])->name('admin.incidencias.create');
+    Route::post('/incidencias/{publicacionId?}', [IncidenciaController::class, 'store'])->name('admin.incidencias.store');
+    Route::get('/incidencias/{id}', [IncidenciaController::class, 'show'])->name('admin.incidencias.show');
+    Route::post('/reportes/{id}/incidencias', [IncidenciaController::class, 'store'])->name('admin.reportes.incidencias.store');
+    Route::post('/devoluciones/{id}/incidencias', [IncidenciaController::class, 'storeFromDevolucion'])->name('admin.devoluciones.incidencias.store');
 });
 
 // Rutas protegidas para usuarios autenticados (CA-12, CA-13, CA-14, CA-15)

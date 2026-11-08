@@ -73,6 +73,22 @@ class Devolucion extends Model
         return $this->belongsTo(User::class, 'admin_id');
     }
 
+    public function incidencias(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Incidencia::class, 'devolucion_id')
+            ->orderBy('id', 'desc');
+    }
+
+    public function incidenciaActiva(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Incidencia::class, 'devolucion_id')
+            ->whereNotIn('estado', [
+                Incidencia::ESTADO_CERRADA,
+                Incidencia::ESTADO_SIN_RESOLVER_CANALIZADA,
+            ])
+            ->latestOfMany();
+    }
+
     public function isPendiente(): bool
     {
         return $this->estado === self::ESTADO_PENDIENTE;

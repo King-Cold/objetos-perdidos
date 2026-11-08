@@ -33,6 +33,7 @@ class ReporteController extends Controller
             'devoluciones',
             'decisiones',
             'recepcion',
+            'incidenciaActiva',
         ])
             ->where('user_id', Auth::id())
             ->latest('id')
@@ -59,6 +60,7 @@ class ReporteController extends Controller
             'user',
             'devolucionActiva',
             'recepcion',
+            'incidenciaActiva',
         ])
             ->findOrFail($id);
 
