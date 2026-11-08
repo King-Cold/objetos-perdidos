@@ -22,6 +22,8 @@ class Devolucion extends Model
         'publicacion_id',
         'user_id',
         'admin_id',
+        'es_registro_extemporaneo',
+        'registrado_por_id',
         'receptor_nombre',
         'receptor_identificador',
         'fecha_entrega',
@@ -30,6 +32,7 @@ class Devolucion extends Model
         'fecha_envio_revision',
         'fecha_resolucion',
         'explicacion_propiedad',
+        'motivo_registro_tardio',
         'motivo_correccion',
         'fotografia_ruta',
         'fotografia_nombre_original',
@@ -41,6 +44,7 @@ class Devolucion extends Model
     protected function casts(): array
     {
         return [
+            'es_registro_extemporaneo' => 'boolean',
             'fecha_entrega' => 'date:Y-m-d',
             'fecha_captura' => 'datetime',
             'fecha_envio_revision' => 'datetime',
@@ -71,6 +75,21 @@ class Devolucion extends Model
     public function admin(): BelongsTo
     {
         return $this->belongsTo(User::class, 'admin_id');
+    }
+
+    /**
+     * Bibliotecario o administrador responsable que documentó la devolución reportada fuera de tiempo.
+     */
+    public function registradoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'registrado_por_id');
+    }
+
+    public function isRegistroExtemporaneo(): bool
+    {
+        return (bool) $this->es_registro_extemporaneo
+            || ! empty($this->registrado_por_id)
+            || ! empty($this->motivo_registro_tardio);
     }
 
     public function incidencias(): \Illuminate\Database\Eloquent\Relations\HasMany

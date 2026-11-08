@@ -365,12 +365,36 @@
                         </div>
                     @endif
 
-                    <!-- Autor responsable de la entrega -->
-                    <div class="pt-2 border-t border-slate-100 text-xs flex items-center justify-between text-slate-500">
-                        <span>Autor responsable de la entrega:</span>
-                        <strong class="text-slate-800 font-bold">
-                            {{ $devolucion->user ? $devolucion->user->name : 'Autor original' }}
-                        </strong>
+                    <!-- Autor responsable de la entrega y bibliotecario que documentó -->
+                    <div class="pt-2 border-t border-slate-100 space-y-2 text-xs">
+                        <div class="flex items-center justify-between text-slate-500">
+                            <span>Autor responsable de la entrega:</span>
+                            <strong class="text-slate-800 font-bold">
+                                {{ $devolucion->user ? $devolucion->user->name : 'Autor original' }}
+                            </strong>
+                        </div>
+
+                        @if ($devolucion->isRegistroExtemporaneo())
+                            <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-1.5">
+                                <div class="flex items-center justify-between text-amber-900">
+                                    <span class="font-bold text-[10px] uppercase tracking-wide">Bibliotecario responsable del registro tardío:</span>
+                                    <strong class="text-amber-950 font-bold">
+                                        {{ $devolucion->registradoPor ? $devolucion->registradoPor->name : 'Personal de biblioteca' }}
+                                    </strong>
+                                </div>
+
+                                @if (! empty($devolucion->motivo_registro_tardio))
+                                    <div class="pt-1.5 border-t border-amber-200/70 space-y-0.5">
+                                        <span class="text-[10px] font-bold uppercase tracking-wider text-amber-900 block">
+                                            Motivo del registro tardío:
+                                        </span>
+                                        <p class="text-xs text-amber-950 leading-relaxed font-medium whitespace-pre-line">
+                                            {{ $devolucion->motivo_registro_tardio }}
+                                        </p>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

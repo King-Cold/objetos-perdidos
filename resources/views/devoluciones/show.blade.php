@@ -266,7 +266,7 @@
                         @endif
                     </div>
 
-                    <!-- Autor responsable de la entrega: integrado discretamente -->
+                    <!-- Autor responsable de la entrega y bibliotecario que documentó (si es fuera de tiempo) -->
                     <div class="p-2.5 bg-slate-50/80 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs">
                         <span class="text-slate-400 font-semibold text-[10px] uppercase tracking-wide">
                             Autor responsable que entregó:
@@ -275,6 +275,30 @@
                             {{ $devolucion->user ? $devolucion->user->name : 'Autor original' }}
                         </span>
                     </div>
+
+                    @if ($devolucion->isRegistroExtemporaneo())
+                        <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-200 space-y-2 text-xs">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                <span class="text-amber-900 font-bold text-[10px] uppercase tracking-wide">
+                                    Bibliotecario responsable que documentó el reporte tardío:
+                                </span>
+                                <span class="font-bold text-amber-950 text-xs sm:text-sm">
+                                    {{ $devolucion->registradoPor ? $devolucion->registradoPor->name : 'Personal de biblioteca' }}
+                                </span>
+                            </div>
+
+                            @if (! empty($devolucion->motivo_registro_tardio))
+                                <div class="pt-1.5 border-t border-amber-200/70 space-y-1">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider text-amber-900 block">
+                                        Motivo del registro tardío:
+                                    </span>
+                                    <p class="text-amber-950 font-medium leading-relaxed whitespace-pre-line">
+                                        {{ $devolucion->motivo_registro_tardio }}
+                                    </p>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
 
                     <!-- Comprobación de propiedad: explicación completa -->
                     <div class="pt-2 border-t border-slate-100 space-y-1.5">

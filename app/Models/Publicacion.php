@@ -392,10 +392,15 @@ class Publicacion extends Model
         }
 
         // Si el objeto ya está bajo resguardo confirmado de biblioteca o recibido, no corresponde entrega pendiente
-        if ($this->hasRecepcionFisicaConfirmada() 
+        $tieneRecepcion = $this->relationLoaded('recepcion')
+            ? $this->recepcion !== null
+            : $this->recepcion()->exists();
+
+        if (
+            $tieneRecepcion
             || $this->situacion_resguardo === self::RESGUARDO_CONFIRMADO
             || $this->situacion_resguardo === 'En biblioteca'
-            || ($this->relationLoaded('recepcion') ? $this->recepcion !== null : $this->recepcion()->exists())
+            || ($this->situacion_resguardo !== self::RESGUARDO_AUTOR && $this->hasRecepcionFisicaConfirmada())
         ) {
             return false;
         }
@@ -1526,6 +1531,13 @@ class Publicacion extends Model
                 $respDev = $dev->user ? $dev->user->name : ($this->user ? $this->user->name : 'Autor del reporte');
 
                 $partesObs = [];
+                if ($dev->isRegistroExtemporaneo()) {
+                    $bibliotecarioTxt = $dev->registradoPor ? $dev->registradoPor->name : 'Personal de biblioteca';
+                    $partesObs[] = "Entrega realizada por el autor ({$respDev}) y documentada fuera de tiempo por biblioteca ({$bibliotecarioTxt} el {$dev->fecha_captura_texto})";
+                    if (! empty($dev->motivo_registro_tardio)) {
+                        $partesObs[] = "Motivo del registro tardío: {$dev->motivo_registro_tardio}";
+                    }
+                }
                 if (! empty($dev->receptor_nombre)) {
                     $idTxt = ! empty($dev->receptor_identificador) ? " ({$dev->receptor_identificador})" : '';
                     $partesObs[] = "Receptor: {$dev->receptor_nombre}{$idTxt}";

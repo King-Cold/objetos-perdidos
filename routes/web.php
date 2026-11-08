@@ -261,6 +261,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
     // Devolución anterior al vencimiento reportada fuera de tiempo (exclusiva para bibliotecario/administrador)
     Route::get('/reportes/{id}/devolucion-fuera-de-tiempo', [DevolucionExtemporaneaController::class, 'create'])->name('admin.devoluciones-extemporaneas.create');
+    Route::post('/reportes/{id}/devolucion-fuera-de-tiempo', [DevolucionExtemporaneaController::class, 'store'])->name('admin.devoluciones-extemporaneas.store');
 
     // Historial del objeto desde apartados de gestión (HU-13 / Tarea 1)
     Route::get('/reportes/{id}/historial', [HistorialController::class, 'show'])->name('admin.reportes.historial');

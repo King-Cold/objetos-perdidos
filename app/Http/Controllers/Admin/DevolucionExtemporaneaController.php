@@ -3,15 +3,39 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreDevolucionExtemporaneaRequest;
+use App\Models\Devolucion;
 use App\Models\Publicacion;
+use Carbon\Carbon;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class DevolucionExtemporaneaController extends Controller
 {
+    private function asegurarColumnasRegistroTardio(): void
+    {
+        try {
+            if (! Schema::hasColumn('devoluciones', 'es_registro_extemporaneo')) {
+                Schema::table('devoluciones', function (Blueprint $table) {
+                    $table->boolean('es_registro_extemporaneo')->default(false)->after('admin_id');
+                    $table->foreignId('registrado_por_id')->nullable()->after('es_registro_extemporaneo')->constrained('users')->nullOnDelete();
+                    $table->text('motivo_registro_tardio')->nullable()->after('explicacion_propiedad');
+                });
+            }
+        } catch (\Throwable $e) {
+            // Ignorar si ya fueron creadas concurrentemente
+        }
+    }
+
     /**
-     * Muestra la vista administrativa para «Registrar devolución reportada fuera de tiempo» (CA-02, CA-03).
+     * Muestra el formulario administrativo para «Registrar devolución reportada fuera de tiempo».
      *
      * Condiciones estrictas:
      * - Exclusivo para el administrador/bibliotecario autenticado.
@@ -20,6 +44,7 @@ class DevolucionExtemporaneaController extends Controller
      */
     public function create(int|string $id): View|RedirectResponse
     {
+        $this->asegurarColumnasRegistroTardio();
         $user = Auth::user();
         if (! $user || ! method_exists($user, 'isAdmin') || ! $user->isAdmin()) {
             abort(403, 'Acción exclusiva para el personal administrador o bibliotecario.');
@@ -42,11 +67,125 @@ class DevolucionExtemporaneaController extends Controller
         $fotografiaPrincipal = $reporte->foto_principal ?? $reporte->fotografias->first();
         $fotografiasAdicionales = $reporte->fotografias->where('id', '!=', $fotografiaPrincipal?->id);
 
+        $minFechaEntrega = null;
+        $minHoraEntrega = null;
+        if ($reporte->fecha_hallazgo) {
+            $minFechaEntrega = $reporte->fecha_hallazgo instanceof Carbon
+                ? $reporte->fecha_hallazgo->format('Y-m-d')
+                : Carbon::parse($reporte->fecha_hallazgo)->format('Y-m-d');
+
+            if (! empty($reporte->hora_hallazgo)) {
+                $minHoraEntrega = substr((string) $reporte->hora_hallazgo, 0, 5);
+            }
+        }
+
+        $maxFechaEntrega = null;
+        $maxHoraEntrega = null;
+        if ($reporte->fecha_vencimiento) {
+            $rawVenc = $reporte->getRawOriginal('fecha_vencimiento');
+            $vencimientoLocal = $rawVenc
+                ? Carbon::parse($rawVenc, Publicacion::TIMEZONE)
+                : Carbon::parse($reporte->fecha_vencimiento->format('Y-m-d H:i:s'), Publicacion::TIMEZONE);
+
+            $maxFechaEntrega = $vencimientoLocal->format('Y-m-d');
+            $maxHoraEntrega = $vencimientoLocal->copy()->subMinute()->format('H:i');
+        }
+
         return view('admin.devoluciones-extemporaneas.create', compact(
             'reporte',
             'fotografiaPrincipal',
-            'fotografiasAdicionales'
+            'fotografiasAdicionales',
+            'minFechaEntrega',
+            'minHoraEntrega',
+            'maxFechaEntrega',
+            'maxHoraEntrega'
         ));
     }
-}
 
+    /**
+     * Persiste la devolución reportada fuera de tiempo capturando motivo, datos y evidencia del receptor,
+     * y conservando por separado la fecha y hora reales de entrega, el momento actual de captura,
+     * el autor original que entregó y el bibliotecario responsable que documentó el registro.
+     */
+    public function store(StoreDevolucionExtemporaneaRequest $request, int|string $id): RedirectResponse
+    {
+        $this->asegurarColumnasRegistroTardio();
+        $archivoGuardadoRuta = null;
+
+        try {
+            return DB::transaction(function () use ($request, $id, &$archivoGuardadoRuta) {
+                /** @var Publicacion $reporte */
+                $reporte = Publicacion::where('id', $id)->lockForUpdate()->firstOrFail();
+
+                $user = Auth::user();
+                if (! $user || ! method_exists($user, 'isAdmin') || ! $user->isAdmin()) {
+                    abort(403, 'Acción exclusiva para el personal administrador o bibliotecario.');
+                }
+
+                if (! $reporte->puedeRegistrarDevolucionExtemporanea()) {
+                    return redirect()
+                        ->route('admin.moderacion.show', $reporte->id)
+                        ->with('error', 'No es posible registrar una devolución reportada fuera de tiempo para este reporte porque no se encuentra expirado, ya fue recibido en biblioteca o existe otra devolución activa o verificada incompatible.');
+                }
+
+                $foto = $request->file('fotografia');
+                $nombreArchivo = Str::uuid() . '.' . $foto->getClientOriginalExtension();
+                $rutaDirectorio = 'devoluciones/' . $reporte->id;
+                $archivoGuardadoRuta = $foto->storeAs($rutaDirectorio, $nombreArchivo, 'local');
+
+                $ahoraMerida = Carbon::now(Publicacion::TIMEZONE);
+                $fechaEntregaReal = $request->input('fecha_entrega');
+                $horaEntregaReal = substr((string) $request->input('hora_entrega'), 0, 5);
+
+                $devolucion = Devolucion::create([
+                    'publicacion_id' => $reporte->id,
+                    'user_id' => $reporte->user_id, // Autor original que realizó la entrega física
+                    'es_registro_extemporaneo' => true,
+                    'registrado_por_id' => $user->id, // Bibliotecario responsable que documentó el registro tardío
+                    'receptor_nombre' => $request->input('receptor_nombre'),
+                    'receptor_identificador' => $request->input('receptor_identificador'),
+                    'fecha_entrega' => $fechaEntregaReal,
+                    'hora_entrega' => $horaEntregaReal,
+                    'fecha_captura' => $ahoraMerida,
+                    'fecha_envio_revision' => $ahoraMerida,
+                    'explicacion_propiedad' => $request->input('explicacion_propiedad'),
+                    'motivo_registro_tardio' => $request->input('motivo_registro_tardio'),
+                    'fotografia_ruta' => $archivoGuardadoRuta,
+                    'fotografia_nombre_original' => $foto->getClientOriginalName(),
+                    'fotografia_mime_type' => $foto->getClientMimeType(),
+                    'fotografia_tamano_bytes' => $foto->getSize(),
+                    'estado' => Devolucion::ESTADO_PENDIENTE,
+                ]);
+
+                // Mantener fuera del muro y en proceso de revisión, sin aprobar automáticamente,
+                // sin alterar fecha_vencimiento original y sin crear recepción ficticia en biblioteca.
+                $reporte->update([
+                    'disponible' => false,
+                    'devolucion_en_proceso' => true,
+                    'estado_devolucion' => Devolucion::ESTADO_PENDIENTE,
+                ]);
+
+                return redirect()
+                    ->route('admin.devoluciones.show', $devolucion->id)
+                    ->with('status', 'La devolución reportada fuera de tiempo se registró y está pendiente de verificación');
+            });
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            if ($archivoGuardadoRuta && Storage::disk('local')->exists($archivoGuardadoRuta)) {
+                Storage::disk('local')->delete($archivoGuardadoRuta);
+            }
+
+            Log::error('Error al registrar devolución reportada fuera de tiempo: ' . $e->getMessage(), [
+                'publicacion_id' => $id,
+                'admin_id' => Auth::id(),
+                'exception' => $e,
+            ]);
+
+            return redirect()
+                ->route('admin.devoluciones-extemporaneas.create', $id)
+                ->withInput()
+                ->withErrors(['general' => 'Ocurrió un error al guardar la devolución reportada fuera de tiempo. Verifica los datos e intenta nuevamente.']);
+        }
+    }
+}
