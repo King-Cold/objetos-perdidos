@@ -28,7 +28,7 @@
                     <div class="sr-only" aria-live="polite">{{ session('status') }}</div>
                 @endif
 
-                @if (session('warning'))
+                @if (session('warning') && ! str_contains(strtolower((string) session('warning')), 'inactividad') && ! str_contains(strtolower((string) session('warning')), 'expiró'))
                     <div class="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-300 text-sm font-semibold text-amber-900 flex items-center justify-between shadow-xs">
                         <div class="flex items-center gap-3">
                             <svg class="w-5 h-5 text-amber-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -196,7 +196,7 @@
                     <div class="sr-only" aria-live="polite">{{ session('status') }}</div>
                 @endif
 
-                @if (session('warning'))
+                @if (session('warning') && ! str_contains(strtolower((string) session('warning')), 'inactividad') && ! str_contains(strtolower((string) session('warning')), 'expiró'))
                     <div class="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-300 text-sm font-semibold text-amber-900 flex items-center justify-between shadow-xs">
                         <div class="flex items-center gap-3">
                             <svg class="w-5 h-5 text-amber-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">

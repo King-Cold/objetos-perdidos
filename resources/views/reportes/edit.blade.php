@@ -224,16 +224,44 @@
                             <label for="area_zona" class="block text-xs font-bold text-slate-800 mb-1.5">
                                 Área o Zona del Campus <span class="text-rose-600 font-bold">*</span>
                             </label>
-                            <input
+                            @php
+                                $selectedArea = old('area_zona', $publicacion->area_zona);
+                            @endphp
+                            <select
                                 id="area_zona"
                                 name="area_zona"
-                                type="text"
-                                value="{{ old('area_zona', $publicacion->area_zona) }}"
-                                maxlength="100"
                                 required
-                                placeholder="Ej. Edificio G - Sistemas"
-                                class="block w-full rounded-2xl border-slate-200 text-sm focus:border-[#691C32] focus:ring-[#691C32] @error('area_zona') border-rose-300 ring-1 ring-rose-300 @enderror"
-                            />
+                                class="block w-full rounded-2xl border text-sm bg-white transition-colors focus:border-[#691C32] focus:ring-[#691C32] @error('area_zona') border-rose-300 ring-1 ring-rose-300 text-rose-900 @else border-slate-200 text-slate-800 @enderror"
+                            >
+                                <option value="" disabled {{ empty($selectedArea) ? 'selected' : '' }}>-- Selecciona el edificio o área --</option>
+
+                                <optgroup label="Sistemas e Informática">
+                                    <option value="Edificio H - Sistemas" {{ ($selectedArea == 'Edificio H - Sistemas' || $selectedArea == 'Edificio H') ? 'selected' : '' }}>Edificio H (Sistemas)</option>
+                                    <option value="Edificio G - Sistemas" {{ ($selectedArea == 'Edificio G - Sistemas' || $selectedArea == 'Edificio G') ? 'selected' : '' }}>Edificio G (Sistemas)</option>
+                                    <option value="Edificio de Maestros de Sistemas" {{ $selectedArea == 'Edificio de Maestros de Sistemas' ? 'selected' : '' }}>Edificio de Maestros de Sistemas</option>
+                                    <option value="Aula del Capítulo de Sistemas" {{ $selectedArea == 'Aula del Capítulo de Sistemas' ? 'selected' : '' }}>Aula del Capítulo de Sistemas</option>
+                                </optgroup>
+
+                                <optgroup label="Administración y Dirección">
+                                    <option value="Edificio B - Dirección y Administración" {{ ($selectedArea == 'Edificio B - Dirección y Administración' || $selectedArea == 'Edificio B' || $selectedArea == 'Edificio B - Laboratorios') ? 'selected' : '' }}>Edificio B (Dirección y Administración)</option>
+                                    <option value="Edificio C - Administración" {{ ($selectedArea == 'Edificio C - Administración' || $selectedArea == 'Edificio C' || $selectedArea == 'Edificio C - Talleres') ? 'selected' : '' }}>Edificio C (Administración)</option>
+                                </optgroup>
+
+                                <optgroup label="Instalaciones y Servicios">
+                                    <option value="Biblioteca" {{ ($selectedArea == 'Biblioteca' || $selectedArea == 'Biblioteca Campus Poniente') ? 'selected' : '' }}>Biblioteca</option>
+                                    <option value="Cafetería" {{ $selectedArea == 'Cafetería' ? 'selected' : '' }}>Cafetería</option>
+                                    <option value="Auditorio" {{ ($selectedArea == 'Auditorio' || $selectedArea == 'Auditorio / Audiovisual') ? 'selected' : '' }}>Auditorio</option>
+                                    <option value="Prefectura" {{ $selectedArea == 'Prefectura' ? 'selected' : '' }}>Prefectura</option>
+                                </optgroup>
+
+                                <optgroup label="Espacios Exteriores y Deportivos">
+                                    <option value="Canchas de Básquetbol" {{ ($selectedArea == 'Canchas de Básquetbol' || $selectedArea == 'Canchas de Básquet') ? 'selected' : '' }}>Canchas de Básquetbol</option>
+                                    <option value="Bancas Cancha de Fútbol" {{ $selectedArea == 'Bancas Cancha de Fútbol' ? 'selected' : '' }}>Bancas Cancha de Fútbol</option>
+                                    <option value="Bubulubu" {{ ($selectedArea == 'Bubulubu' || $selectedArea == 'El Bubulubu') ? 'selected' : '' }}>Bubulubu</option>
+                                    <option value="Estacionamiento" {{ ($selectedArea == 'Estacionamiento' || $selectedArea == 'Estacionamiento General') ? 'selected' : '' }}>Estacionamiento</option>
+                                    <option value="Otra área del campus" {{ ($selectedArea == 'Otra área del campus' || $selectedArea == 'Otra zona del campus') ? 'selected' : '' }}>Otra área del campus</option>
+                                </optgroup>
+                            </select>
                             @error('area_zona')
                                 <p class="mt-1 text-xs text-rose-600 font-semibold">{{ $message }}</p>
                             @enderror
