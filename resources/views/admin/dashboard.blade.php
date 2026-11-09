@@ -37,7 +37,7 @@
             </div>
 
             <!-- Accesos a Módulos Administrativos -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <!-- Apartado: Moderación de reportes (HU-07 / Tarea 07.1) -->
                 <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between hover:border-tecnm-wine/40 transition-colors">
                     <div>
@@ -54,7 +54,7 @@
                     </a>
                 </div>
 
-                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-colors">
                     <div>
                         <div class="w-10 h-10 rounded-xl bg-tecnm-wine/10 text-tecnm-wine flex items-center justify-center mb-3">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,21 +67,6 @@
                     <a href="{{ route('muro') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">
                         Ir al Muro
                     </a>
-                </div>
-
-                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-                    <div>
-                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center mb-3">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                            </svg>
-                        </div>
-                        <h4 class="text-sm font-bold text-slate-900 mb-1">Aprobación de Objetos</h4>
-                        <p class="text-xs text-slate-500 mb-4">Revisar y autorizar objetos pendientes de resguardo físico.</p>
-                    </div>
-                    <span class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-amber-50 text-amber-800 text-xs font-semibold">
-                        Módulo activo
-                    </span>
                 </div>
 
                 <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between hover:border-emerald-500/40 transition-colors">

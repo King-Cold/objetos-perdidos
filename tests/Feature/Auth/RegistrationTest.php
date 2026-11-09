@@ -43,7 +43,7 @@ class RegistrationTest extends TestCase
      * Verifica que un usuario válido sea creado exitosamente en la base de datos,
      * inicie sesión automáticamente, se redirija al muro principal y se muestre «Registro exitoso».
      */
-    public function test_user_account_is_successfully_created_authenticated_and_redirected_to_dashboard_with_notification(): void
+    public function test_user_account_is_successfully_created_authenticated_and_redirected_to_muro_with_notification(): void
     {
         $response = $this->post('/register', [
             'name' => " María José Peña-O'Connor ",
@@ -56,7 +56,7 @@ class RegistrationTest extends TestCase
         $response->assertSessionHasNoErrors();
 
         // 1. Redirección al muro principal de la plataforma
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('muro', absolute: false));
 
         // 2. Notificación en sesión «Registro exitoso»
         $response->assertSessionHas('status', 'Registro exitoso');
@@ -80,9 +80,9 @@ class RegistrationTest extends TestCase
         $this->assertAuthenticatedAs($user);
 
         // 5. Verifica que la notificación aparezca en el muro principal
-        $dashboardResponse = $this->get(route('dashboard'));
-        $dashboardResponse->assertStatus(200);
-        $dashboardResponse->assertSee('Registro exitoso');
+        $muroResponse = $this->get(route('muro'));
+        $muroResponse->assertStatus(200);
+        $muroResponse->assertSee('Registro exitoso');
 
         // 6. Verifica que el usuario autenticado no pueda volver al formulario de registro (guest middleware)
         $registerResponse = $this->get('/register');
@@ -487,7 +487,7 @@ class RegistrationTest extends TestCase
         ]);
 
         $successResponse->assertSessionHasNoErrors();
-        $successResponse->assertRedirect(route('dashboard', absolute: false));
+        $successResponse->assertRedirect(route('muro', absolute: false));
         $successResponse->assertSessionHas('status', 'Registro exitoso');
 
         $this->assertAuthenticated();

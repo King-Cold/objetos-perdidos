@@ -271,7 +271,8 @@
             </div>
 
             {{-- SECCIÓN CA-03: OBSERVACIONES DEL CASO (Aclaraciones, contactos externos y resultados) --}}
-            <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 sm:p-8 space-y-6">
+            <div x-data="{ openObsForm: {{ $errors->has('descripcion') ? 'true' : 'false' }} }"
+                 class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 sm:p-8 space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-4">
                     <div>
                         <h2 class="text-lg font-extrabold text-slate-900">
@@ -281,9 +282,20 @@
                             Bitácora administrativa con fecha y responsable de cada aclaración, contacto por medios externos y resultado obtenido.
                         </p>
                     </div>
-                    <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
-                        Total: {{ $incidencia->observaciones->count() }}
-                    </span>
+                    <div class="flex items-center gap-3">
+                        <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
+                            Total: {{ $incidencia->observaciones->count() }}
+                        </span>
+                        @if ($incidencia->isActiva())
+                            <button type="button"
+                                    @click="openObsForm = !openObsForm"
+                                    :class="openObsForm ? 'border-slate-300 bg-slate-100 text-slate-700' : 'border-[#4E0B1B]/30 bg-[#4E0B1B]/5 text-[#4E0B1B] hover:bg-[#4E0B1B]/10'"
+                                    class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border text-xs font-bold shadow-xs transition">
+                                <span x-show="!openObsForm">+ Agregar observación</span>
+                                <span x-show="openObsForm" x-cloak>✕ Ocultar formulario</span>
+                            </button>
+                        @endif
+                    </div>
                 </div>
 
                 @if ($incidencia->observaciones->isEmpty())
@@ -321,7 +333,9 @@
                 @endif
 
                 @if ($incidencia->isActiva())
-                    <form method="POST"
+                    <form x-show="openObsForm"
+                          x-cloak
+                          method="POST"
                           action="{{ route('admin.incidencias.observaciones.store', $incidencia->id) }}"
                           class="pt-4 border-t border-slate-100 space-y-4">
                         @csrf
@@ -378,7 +392,12 @@
                                    class="w-full rounded-xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">
                         </div>
 
-                        <div class="flex justify-end">
+                        <div class="flex items-center justify-between pt-2">
+                            <button type="button"
+                                    @click="openObsForm = false"
+                                    class="text-xs text-slate-500 hover:text-slate-800 font-semibold">
+                                Cancelar
+                            </button>
                             <button type="submit"
                                     class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm transition">
                                 Guardar observación
@@ -388,152 +407,390 @@
                 @endif
             </div>
 
-            {{-- SECCIÓN CA-05, CA-06, CA-07: GESTIÓN DE DECISIONES DE REVISIÓN --}}
-            @if ($incidencia->isActiva())
-                <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 sm:p-8 space-y-6">
+            {{-- SECCIÓN CA-05, CA-06, CA-07 y CA-09: GESTIÓN DE DECISIONES DE REVISIÓN (ESTADO ABIERTA) --}}
+            @if ($incidencia->estado === \App\Models\Incidencia::ESTADO_ABIERTA)
+                <div x-data="{ 
+                    decision: '{{ old('_decision', ($errors->has('responsable_canalizacion') || $errors->has('observaciones_seguimiento')) ? 'canalizar' : '') }}' 
+                }" class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 sm:p-8 space-y-6">
                     <div class="border-b border-slate-100 pb-4">
-                        <h2 class="text-lg font-extrabold text-slate-900">
-                            Gestionar decisiones de revisión de la incidencia
-                        </h2>
-                        <p class="text-xs text-slate-500 mt-0.5">
-                            Selecciona el dictamen correspondiente según el resultado de la revisión. El objeto no se reactivará en el muro público mientras exista duda.
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                                <span class="inline-block px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 text-[11px] font-extrabold mb-1">
+                                    Gestión de Dictamen
+                                </span>
+                                <h2 class="text-lg font-extrabold text-slate-900">
+                                    Gestionar decisiones de revisión de la incidencia
+                                </h2>
+                                <p class="text-xs text-slate-500 mt-0.5">
+                                    Selecciona el dictamen correspondiente según el resultado de la revisión. El objeto no se reactivará en el muro público mientras exista duda.
+                                </p>
+                            </div>
+                            <template x-if="decision !== ''">
+                                <button type="button" 
+                                        @click="decision = ''"
+                                        class="text-xs text-slate-500 hover:text-slate-800 font-semibold underline">
+                                    Ocultar formulario / Elegir otra opción
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Selector de 4 Opciones / Tarjetas Interactivas --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Opción 1: Correcta -->
+                        <div @click="decision = (decision === 'correcta' ? '' : 'correcta')"
+                             :class="decision === 'correcta' ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/40 shadow-sm' : 'border-slate-200 hover:border-emerald-300 bg-white'"
+                             class="p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between group shadow-xs">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-extrabold">
+                                        1. Entrega correcta
+                                    </span>
+                                    <span :class="decision === 'correcta' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-emerald-100 group-hover:text-emerald-700'"
+                                          class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-colors">
+                                        ✓
+                                    </span>
+                                </div>
+                                <h3 class="text-sm font-extrabold text-slate-900 mb-1">Aprobar devolución</h3>
+                                <p class="text-xs text-slate-500 leading-snug">
+                                    Si el objeto fue entregado a la persona correcta y la evidencia está completa, aprueba la devolución y cierra la incidencia sin exigir recuperar el objeto ni recibirlo en biblioteca.
+                                </p>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-slate-100 text-[11px] font-bold"
+                                 :class="decision === 'correcta' ? 'text-emerald-700' : 'text-slate-400 group-hover:text-emerald-600'">
+                                <span x-show="decision !== 'correcta'">Elegir esta opción →</span>
+                                <span x-show="decision === 'correcta'" x-cloak>✓ Opción activa (formulario abajo)</span>
+                            </div>
+                        </div>
+
+                        <!-- Opción 2: Corrección -->
+                        <div @click="decision = (decision === 'correccion' ? '' : 'correccion')"
+                             :class="decision === 'correccion' ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/40 shadow-sm' : 'border-slate-200 hover:border-amber-300 bg-white'"
+                             class="p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between group shadow-xs">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-extrabold">
+                                        2. Prueba incompleta
+                                    </span>
+                                    <span :class="decision === 'correccion' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-amber-100 group-hover:text-amber-700'"
+                                          class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-colors">
+                                        ✎
+                                    </span>
+                                </div>
+                                <h3 class="text-sm font-extrabold text-slate-900 mb-1">Solicitar corrección</h3>
+                                <p class="text-xs text-slate-500 leading-snug">
+                                    Si solo faltan datos o una fotografía clara sin sospecha de entrega incorrecta, solicita corregir la misma devolución («En espera de corrección»), sin crear otra entrega ni reactivar el objeto.
+                                </p>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-slate-100 text-[11px] font-bold"
+                                 :class="decision === 'correccion' ? 'text-amber-800' : 'text-slate-400 group-hover:text-amber-600'">
+                                <span x-show="decision !== 'correccion'">Elegir esta opción →</span>
+                                <span x-show="decision === 'correccion'" x-cloak>✓ Opción activa (formulario abajo)</span>
+                            </div>
+                        </div>
+
+                        <!-- Opción 3: Entrega Incorrecta -->
+                        <div @click="decision = (decision === 'incorrecta' ? '' : 'incorrecta')"
+                             :class="decision === 'incorrecta' ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 shadow-sm' : 'border-slate-200 hover:border-rose-300 bg-white'"
+                             class="p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between group shadow-xs">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-900 text-[10px] font-extrabold">
+                                        3. Entrega incorrecta confirmada
+                                    </span>
+                                    <span :class="decision === 'incorrecta' ? 'bg-[#4E0B1B] text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-rose-100 group-hover:text-rose-700'"
+                                          class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-colors">
+                                        !
+                                    </span>
+                                </div>
+                                <h3 class="text-sm font-extrabold text-slate-900 mb-1">Pasar a «En espera de recuperación»</h3>
+                                <p class="text-xs text-slate-500 leading-snug">
+                                    Si se confirma que el receptor no era el dueño, registra esa conclusión y la solicitud de llevar el objeto a biblioteca. La promesa de devolverlo no se considera recuperación física.
+                                </p>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-slate-100 text-[11px] font-bold"
+                                 :class="decision === 'incorrecta' ? 'text-[#4E0B1B]' : 'text-slate-400 group-hover:text-rose-600'">
+                                <span x-show="decision !== 'incorrecta'">Elegir esta opción →</span>
+                                <span x-show="decision === 'incorrecta'" x-cloak>✓ Opción activa (formulario abajo)</span>
+                            </div>
+                        </div>
+
+                        <!-- Opción 4: Canalizar -->
+                        <div @click="decision = (decision === 'canalizar' ? '' : 'canalizar')"
+                             :class="decision === 'canalizar' ? 'border-slate-700 ring-2 ring-slate-500/20 bg-slate-50 shadow-sm' : 'border-slate-200 hover:border-slate-400 bg-white'"
+                             class="p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between group shadow-xs">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-800 text-[10px] font-extrabold">
+                                        4. Caso sin solución
+                                    </span>
+                                    <span :class="decision === 'canalizar' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200 group-hover:text-slate-800'"
+                                          class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-colors">
+                                        🏛
+                                    </span>
+                                </div>
+                                <h3 class="text-sm font-extrabold text-slate-900 mb-1">Marcar incidencia como «Sin resolver y canalizada»</h3>
+                                <p class="text-xs text-slate-500 leading-snug">
+                                    Si no es posible aclarar el caso ni recuperar físicamente el objeto, registra la canalización institucional con motivo, destino y observaciones de seguimiento. El objeto no se marcará como «Devuelto» ni como «Disponible», y el sistema no impondrá sanciones automáticas.
+                                </p>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-slate-100 text-[11px] font-bold"
+                                 :class="decision === 'canalizar' ? 'text-slate-800' : 'text-slate-400 group-hover:text-slate-700'">
+                                <span x-show="decision !== 'canalizar'">Elegir esta opción →</span>
+                                <span x-show="decision === 'canalizar'" x-cloak>✓ Opción activa (formulario abajo)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Mensaje de ayuda si no hay opción seleccionada --}}
+                    <div x-show="decision === ''" class="rounded-2xl bg-slate-50 border border-slate-200/80 p-6 text-center text-xs text-slate-600 space-y-1.5">
+                        <p class="font-extrabold text-slate-800 text-sm">Elige una de las 4 opciones de arriba según lo que necesites realizar</p>
+                        <p class="text-slate-500 max-w-lg mx-auto">
+                            Al hacer clic en la opción que deseas ejecutar, se desplegará únicamente su formulario con los campos que necesitas llenar, manteniendo la pantalla despejada.
                         </p>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {{-- Opción 1: CA-05 Entrega aclarada como correcta --}}
+                    {{-- Formulario 1: Entrega correcta --}}
+                    <div x-show="decision === 'correcta'" x-cloak class="transition-all">
                         <form method="POST"
                               action="{{ route('admin.incidencias.confirmar-entrega-correcta', $incidencia->id) }}"
-                              class="rounded-2xl bg-emerald-50/50 border border-emerald-200 p-5 flex flex-col justify-between space-y-4">
+                              class="rounded-2xl bg-emerald-50/50 border border-emerald-200 p-6 space-y-4">
                             @csrf
-                            <div class="space-y-2">
+                            <input type="hidden" name="_decision" value="correcta">
+                            <div class="space-y-1">
                                 <span class="inline-block px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[11px] font-extrabold">
                                     1. Entrega aclarada como correcta
                                 </span>
-                                <h3 class="text-sm font-extrabold text-slate-900">
+                                <h3 class="text-base font-extrabold text-slate-900">
                                     Confirmar entrega correcta y aprobar devolución
                                 </h3>
                                 <p class="text-xs text-slate-600 leading-relaxed">
                                     Si el objeto fue entregado a la persona correcta y la evidencia está completa, aprueba la devolución y cierra la incidencia sin exigir recuperar el objeto ni recibirlo en biblioteca.
                                 </p>
-                                <div class="pt-2">
-                                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                                        Motivo de confirmación y cierre <span class="text-rose-600">*</span>
-                                    </label>
-                                    <textarea name="motivo"
-                                              rows="3"
-                                              required
-                                              placeholder="Explica por qué se confirma que la entrega fue correcta..."
-                                              class="w-full rounded-xl border-emerald-300 text-xs focus:border-emerald-700 focus:ring-emerald-700"></textarea>
-                                </div>
                             </div>
-                            <button type="submit"
-                                    class="w-full py-2.5 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition">
-                                Aprobar devolución y cerrar incidencia
-                            </button>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                                    Motivo de confirmación y cierre <span class="text-rose-600">*</span>
+                                </label>
+                                <textarea name="motivo"
+                                          rows="3"
+                                          required
+                                          placeholder="Explica por qué se confirma que la entrega fue correcta..."
+                                          class="w-full rounded-2xl border-emerald-300 text-xs sm:text-sm focus:border-emerald-700 focus:ring-emerald-700">{{ old('_decision') === 'correcta' ? old('motivo') : '' }}</textarea>
+                            </div>
+                            <div class="flex items-center justify-between pt-2">
+                                <button type="button" @click="decision = ''" class="text-xs text-slate-500 hover:text-slate-700 font-semibold">
+                                    Cancelar / Elegir otra opción
+                                </button>
+                                <button type="submit"
+                                        class="py-2.5 px-5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition">
+                                    Aprobar devolución y cerrar incidencia
+                                </button>
+                            </div>
                         </form>
+                    </div>
 
-                        {{-- Opción 2: CA-06 Prueba incompleta / Evidencia insuficiente sin sospecha --}}
+                    {{-- Formulario 2: Corrección --}}
+                    <div x-show="decision === 'correccion'" x-cloak class="transition-all">
                         <form method="POST"
                               action="{{ route('admin.incidencias.solicitar-correccion', $incidencia->id) }}"
-                              class="rounded-2xl bg-amber-50/60 border border-amber-200 p-5 flex flex-col justify-between space-y-4">
+                              class="rounded-2xl bg-amber-50/60 border border-amber-200 p-6 space-y-4">
                             @csrf
-                            <div class="space-y-2">
+                            <input type="hidden" name="_decision" value="correccion">
+                            <div class="space-y-1">
                                 <span class="inline-block px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[11px] font-extrabold">
                                     2. Prueba incompleta
                                 </span>
-                                <h3 class="text-sm font-extrabold text-slate-900">
+                                <h3 class="text-base font-extrabold text-slate-900">
                                     Solicitar corrección de devolución existente
                                 </h3>
                                 <p class="text-xs text-slate-600 leading-relaxed">
                                     Si solo faltan datos o una fotografía clara sin sospecha de entrega incorrecta, solicita corregir la misma devolución («En espera de corrección»), sin crear otra entrega ni reactivar el objeto.
                                 </p>
-                                <div class="pt-2">
-                                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                                        Motivo de corrección <span class="text-rose-600">*</span>
-                                    </label>
-                                    <textarea name="motivo"
-                                              rows="3"
-                                              required
-                                              placeholder="Indica qué datos o fotografía debe corregir el autor..."
-                                              class="w-full rounded-xl border-amber-300 text-xs focus:border-amber-700 focus:ring-amber-700"></textarea>
-                                </div>
                             </div>
-                            <button type="submit"
-                                    class="w-full py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-sm transition">
-                                Solicitar corrección
-                            </button>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                                    Motivo de corrección <span class="text-rose-600">*</span>
+                                </label>
+                                <textarea name="motivo"
+                                          rows="3"
+                                          required
+                                          placeholder="Indica qué datos o fotografía debe corregir el autor..."
+                                          class="w-full rounded-2xl border-amber-300 text-xs sm:text-sm focus:border-amber-700 focus:ring-amber-700">{{ old('_decision') === 'correccion' ? old('motivo') : '' }}</textarea>
+                            </div>
+                            <div class="flex items-center justify-between pt-2">
+                                <button type="button" @click="decision = ''" class="text-xs text-slate-500 hover:text-slate-700 font-semibold">
+                                    Cancelar / Elegir otra opción
+                                </button>
+                                <button type="submit"
+                                        class="py-2.5 px-5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-sm transition">
+                                    Solicitar corrección
+                                </button>
+                            </div>
                         </form>
+                    </div>
 
-                        {{-- Opción 3: CA-07 Entrega incorrecta confirmada --}}
+                    {{-- Formulario 3: Entrega incorrecta --}}
+                    <div x-show="decision === 'incorrecta'" x-cloak class="transition-all">
                         <form method="POST"
                               action="{{ route('admin.incidencias.confirmar-entrega-incorrecta', $incidencia->id) }}"
-                              class="rounded-2xl bg-rose-50/60 border border-rose-200 p-5 flex flex-col justify-between space-y-4">
+                              class="rounded-2xl bg-rose-50/60 border border-rose-200 p-6 space-y-4">
                             @csrf
-                            <div class="space-y-2">
+                            <input type="hidden" name="_decision" value="incorrecta">
+                            <div class="space-y-1">
                                 <span class="inline-block px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-900 text-[11px] font-extrabold">
                                     3. Entrega incorrecta confirmada
                                 </span>
-                                <h3 class="text-sm font-extrabold text-slate-900">
+                                <h3 class="text-base font-extrabold text-slate-900">
                                     Pasar a «En espera de recuperación»
                                 </h3>
                                 <p class="text-xs text-slate-600 leading-relaxed">
                                     Si se confirma que el receptor no era el dueño, registra esa conclusión y la solicitud de llevar el objeto a biblioteca. La promesa de devolverlo no se considera recuperación física.
                                 </p>
-                                <div class="pt-2 space-y-2">
-                                    <div>
-                                        <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                                            Conclusión de entrega incorrecta <span class="text-rose-600">*</span>
-                                        </label>
-                                        <textarea name="motivo"
-                                                  rows="2"
-                                                  required
-                                                  placeholder="Registra la conclusión que confirma que el receptor no era el dueño..."
-                                                  class="w-full rounded-xl border-rose-300 text-xs focus:border-rose-700 focus:ring-rose-700"></textarea>
-                                    </div>
-                                    <div>
-                                        <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                                            Solicitud de entrega en biblioteca <span class="text-rose-600">*</span>
-                                        </label>
-                                        <input type="text"
-                                               name="solicitud_recuperacion"
-                                               required
-                                               value="Se solicita llevar y entregar físicamente el objeto en biblioteca institucional para confirmar su recuperación."
-                                               class="w-full rounded-xl border-rose-300 text-xs focus:border-rose-700 focus:ring-rose-700">
-                                    </div>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                                        Conclusión de entrega incorrecta <span class="text-rose-600">*</span>
+                                    </label>
+                                    <textarea name="motivo"
+                                              rows="2"
+                                              required
+                                              placeholder="Registra la conclusión que confirma que el receptor no era el dueño..."
+                                              class="w-full rounded-2xl border-rose-300 text-xs sm:text-sm focus:border-rose-700 focus:ring-rose-700">{{ old('_decision') === 'incorrecta' ? old('motivo') : '' }}</textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                                        Solicitud de entrega en biblioteca <span class="text-rose-600">*</span>
+                                    </label>
+                                    <input type="text"
+                                           name="solicitud_recuperacion"
+                                           required
+                                           value="Se solicita llevar y entregar físicamente el objeto en biblioteca institucional para confirmar su recuperación."
+                                           class="w-full rounded-xl border-rose-300 text-xs sm:text-sm focus:border-rose-700 focus:ring-rose-700">
                                 </div>
                             </div>
-                            <button type="submit"
-                                    class="w-full py-2.5 px-4 rounded-xl bg-[#4E0B1B] hover:bg-[#3A0814] text-white text-xs font-bold shadow-sm transition">
-                                Confirmar y pasar a espera de recuperación
-                            </button>
+                            <div class="flex items-center justify-between pt-2">
+                                <button type="button" @click="decision = ''" class="text-xs text-slate-500 hover:text-slate-700 font-semibold">
+                                    Cancelar / Elegir otra opción
+                                </button>
+                                <button type="submit"
+                                        class="py-2.5 px-5 rounded-xl bg-[#4E0B1B] hover:bg-[#3A0814] text-white text-xs font-bold shadow-sm transition">
+                                    Confirmar y pasar a espera de recuperación
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    {{-- Formulario 4: Canalizar --}}
+                    <div x-show="decision === 'canalizar'" x-cloak class="transition-all">
+                        <form method="POST"
+                              action="{{ route('admin.incidencias.canalizar', $incidencia->id) }}"
+                              class="rounded-2xl bg-slate-50 border border-slate-300 p-6 space-y-4">
+                            @csrf
+                            <input type="hidden" name="_decision" value="canalizar">
+                            <div class="space-y-1">
+                                <span class="inline-block px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-800 text-[11px] font-extrabold">
+                                    4. Caso sin solución
+                                </span>
+                                <h3 class="text-base font-extrabold text-slate-900">
+                                    Marcar incidencia como «Sin resolver y canalizada»
+                                </h3>
+                                <p class="text-xs text-slate-600 leading-relaxed">
+                                    Si no es posible aclarar el caso ni recuperar físicamente el objeto, registra la canalización institucional con motivo, destino y observaciones de seguimiento. El objeto no se marcará como «Devuelto» ni como «Disponible», y el sistema no impondrá sanciones automáticas.
+                                </p>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                        Destino o instancia institucional de canalización <span class="text-rose-600">*</span>
+                                    </label>
+                                    <input type="text"
+                                           name="responsable_canalizacion"
+                                           value="{{ old('responsable_canalizacion') }}"
+                                           required
+                                           placeholder="Ej. Subdirección de Servicios Administrativos / Jefatura de Centro de Información"
+                                           class="w-full rounded-xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                        Motivo por el que no fue posible resolver ni recuperar <span class="text-rose-600">*</span>
+                                    </label>
+                                    <input type="text"
+                                           name="motivo"
+                                           value="{{ old('motivo') }}"
+                                           required
+                                           placeholder="Describe el motivo por el cual el caso se canaliza sin resolver..."
+                                           class="w-full rounded-xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                    Observaciones de seguimiento institucional <span class="text-rose-600">*</span>
+                                </label>
+                                <textarea name="observaciones_seguimiento"
+                                          rows="2"
+                                          required
+                                          placeholder="Registra las gestiones realizadas, antecedentes que se turnan y observaciones de seguimiento..."
+                                          class="w-full rounded-2xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">{{ old('observaciones_seguimiento') }}</textarea>
+                            </div>
+                            <div class="flex items-center justify-between pt-2">
+                                <button type="button" @click="decision = ''" class="text-xs text-slate-500 hover:text-slate-700 font-semibold">
+                                    Cancelar / Elegir otra opción
+                                </button>
+                                <button type="submit"
+                                        class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold shadow-sm transition">
+                                    Marcar como «Sin resolver y canalizada»
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
+            @endif
 
-                {{-- SECCIÓN CA-07, CA-08 y CA-13: VINCULAR RECUPERACIÓN FÍSICA EN BIBLIOTECA Y CIERRE TRAS RECUPERACIÓN --}}
-                @if ($incidencia->estado === \App\Models\Incidencia::ESTADO_ESPERA_RECUPERACION)
-                    <div class="bg-white rounded-3xl border border-orange-200 shadow-sm p-6 sm:p-8 space-y-6">
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
-                            <div>
-                                <span class="inline-block px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-900 text-[11px] font-extrabold mb-1">
-                                    Seguimiento de entrega incorrecta confirmada
-                                </span>
-                                <h2 class="text-lg font-extrabold text-slate-900">
-                                    Recuperación física del objeto en biblioteca y cierre del caso
-                                </h2>
-                                <p class="text-xs text-slate-600 mt-0.5">
-                                    Una promesa de devolver el objeto no se considera recuperación. La recuperación se completa únicamente mediante la recepción física en biblioteca, conservando los antecedentes y evidencias de la entrega incorrecta.
-                                </p>
-                            </div>
-                            @if ($pub && !$incidencia->hasRecuperacionFisicaConfirmada())
-                                <a href="{{ route('admin.recepciones.create', ['id' => $pub->id, 'from_incidencia' => 1]) }}"
-                                   class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#4E0B1B] hover:bg-[#3A0814] text-white text-xs font-bold shadow-sm transition">
-                                    Ir al formulario de recepción en biblioteca
-                                </a>
-                            @endif
+            {{-- SECCIÓN CA-07, CA-08 y CA-13: VINCULAR RECUPERACIÓN FÍSICA EN BIBLIOTECA Y CIERRE TRAS RECUPERACIÓN --}}
+            @if ($incidencia->estado === \App\Models\Incidencia::ESTADO_ESPERA_RECUPERACION)
+                <div x-data="{ 
+                    recuperacionTab: '{{ ($errors->has('responsable_canalizacion') || $errors->has('observaciones_seguimiento')) ? 'canalizar' : 'recepcion' }}' 
+                }" class="bg-white rounded-3xl border border-orange-200 shadow-sm p-6 sm:p-8 space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
+                        <div>
+                            <span class="inline-block px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-900 text-[11px] font-extrabold mb-1">
+                                Seguimiento de entrega incorrecta confirmada
+                            </span>
+                            <h2 class="text-lg font-extrabold text-slate-900">
+                                Recuperación física del objeto en biblioteca y cierre del caso
+                            </h2>
+                            <p class="text-xs text-slate-600 mt-0.5">
+                                Una promesa de devolver el objeto no se considera recuperación. La recuperación se completa únicamente mediante la recepción física en biblioteca, conservando los antecedentes y evidencias de la entrega incorrecta.
+                            </p>
                         </div>
+                        @if ($pub && !$incidencia->hasRecuperacionFisicaConfirmada())
+                            <a href="{{ route('admin.recepciones.create', ['id' => $pub->id, 'from_incidencia' => 1]) }}"
+                               class="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#4E0B1B] hover:bg-[#3A0814] text-white text-xs font-bold shadow-sm transition">
+                                Ir al formulario de recepción en biblioteca
+                            </a>
+                        @endif
+                    </div>
 
+                    {{-- Selector de Modo de Acción en Espera de Recuperación --}}
+                    <div class="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-3">
+                        <button type="button" 
+                                @click="recuperacionTab = 'recepcion'"
+                                :class="recuperacionTab === 'recepcion' ? 'bg-orange-600 text-white font-bold shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold'"
+                                class="px-4 py-2 rounded-xl text-xs transition">
+                            📦 1. Recepción y recuperación física en biblioteca
+                        </button>
+                        <button type="button" 
+                                @click="recuperacionTab = 'canalizar'"
+                                :class="recuperacionTab === 'canalizar' ? 'bg-slate-800 text-white font-bold shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold'"
+                                class="px-4 py-2 rounded-xl text-xs transition">
+                            🏛 2. Si no es posible recuperar: Canalizar a autoridades
+                        </button>
+                    </div>
+
+                    {{-- Pestaña 1: Recepción / Cierre --}}
+                    <div x-show="recuperacionTab === 'recepcion'" class="space-y-4">
                         @if (!$incidencia->hasRecuperacionFisicaConfirmada() && !$recepcionVinculada)
                             <form method="POST"
                                   action="{{ route('admin.incidencias.recuperacion-fisica', $incidencia->id) }}"
@@ -662,67 +919,69 @@
                             </form>
                         @endif
                     </div>
-                @endif
 
-                {{-- SECCIÓN CA-09: CASO SIN SOLUCIÓN («Sin resolver y canalizada») --}}
-                <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6 sm:p-8 space-y-5">
-                    <div class="border-b border-slate-100 pb-4">
-                        <span class="inline-block px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-800 text-[11px] font-extrabold mb-1">
-                            Caso sin solución
-                        </span>
-                        <h2 class="text-lg font-extrabold text-slate-900">
-                            Marcar incidencia como «Sin resolver y canalizada»
-                        </h2>
-                        <p class="text-xs text-slate-500 mt-0.5">
-                            Si no es posible aclarar el caso ni recuperar físicamente el objeto, registra la canalización institucional con motivo, destino y observaciones de seguimiento. El objeto no se marcará como «Devuelto» ni como «Disponible», y el sistema no impondrá sanciones automáticas.
-                        </p>
+                    {{-- Pestaña 2: Canalizar caso si no acudió --}}
+                    <div x-show="recuperacionTab === 'canalizar'" x-cloak class="space-y-4">
+                        <div class="rounded-2xl bg-slate-50 border border-slate-300 p-6 space-y-4">
+                            <div class="space-y-1">
+                                <span class="inline-block px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-800 text-[11px] font-extrabold">
+                                    Caso sin solución tras espera de recuperación
+                                </span>
+                                <h3 class="text-base font-extrabold text-slate-900">
+                                    Marcar incidencia como «Sin resolver y canalizada»
+                                </h3>
+                                <p class="text-xs text-slate-600 leading-relaxed">
+                                    Si el receptor no acudió a entregar físicamente el objeto tras los avisos o no fue posible contactarlo, registra la canalización institucional a la instancia correspondiente. El objeto no se marcará como «Devuelto» ni como «Disponible».
+                                </p>
+                            </div>
+
+                            <form method="POST"
+                                  action="{{ route('admin.incidencias.canalizar', $incidencia->id) }}"
+                                  class="space-y-4">
+                                @csrf
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                            Destino o instancia institucional de canalización <span class="text-rose-600">*</span>
+                                        </label>
+                                        <input type="text"
+                                               name="responsable_canalizacion"
+                                               value="{{ old('responsable_canalizacion') }}"
+                                               required
+                                               placeholder="Ej. Subdirección de Servicios Administrativos / Jefatura de Centro de Información"
+                                               class="w-full rounded-xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                            Motivo por el que no fue posible resolver ni recuperar <span class="text-rose-600">*</span>
+                                        </label>
+                                        <input type="text"
+                                               name="motivo"
+                                               value="{{ old('motivo') }}"
+                                               required
+                                               placeholder="Describe el motivo por el cual el caso se canaliza sin resolver..."
+                                               class="w-full rounded-xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                        Observaciones de seguimiento institucional <span class="text-rose-600">*</span>
+                                    </label>
+                                    <textarea name="observaciones_seguimiento"
+                                              rows="2"
+                                              required
+                                              placeholder="Registra las gestiones realizadas, antecedentes que se turnan y observaciones de seguimiento..."
+                                              class="w-full rounded-2xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">{{ old('observaciones_seguimiento') }}</textarea>
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="submit"
+                                            class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold shadow-sm transition">
+                                        Marcar como «Sin resolver y canalizada»
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-
-                    <form method="POST"
-                          action="{{ route('admin.incidencias.canalizar', $incidencia->id) }}"
-                          class="space-y-4">
-                        @csrf
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                                    Destino o instancia institucional de canalización <span class="text-rose-600">*</span>
-                                </label>
-                                <input type="text"
-                                       name="responsable_canalizacion"
-                                       value="{{ old('responsable_canalizacion') }}"
-                                       required
-                                       placeholder="Ej. Subdirección de Servicios Administrativos / Jefatura de Centro de Información"
-                                       class="w-full rounded-xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                                    Motivo por el que no fue posible resolver ni recuperar <span class="text-rose-600">*</span>
-                                </label>
-                                <input type="text"
-                                       name="motivo"
-                                       value="{{ old('motivo') }}"
-                                       required
-                                       placeholder="Describe el motivo por el cual el caso se canaliza sin resolver..."
-                                       class="w-full rounded-xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                                Observaciones de seguimiento institucional <span class="text-rose-600">*</span>
-                            </label>
-                            <textarea name="observaciones_seguimiento"
-                                      rows="2"
-                                      required
-                                      placeholder="Registra las gestiones realizadas, antecedentes que se turnan y observaciones de seguimiento..."
-                                      class="w-full rounded-2xl border-slate-300 text-xs sm:text-sm focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">{{ old('observaciones_seguimiento') }}</textarea>
-                        </div>
-                        <div class="flex justify-end">
-                            <button type="submit"
-                                    class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold shadow-sm transition">
-                                Marcar como «Sin resolver y canalizada»
-                            </button>
-                        </div>
-                    </form>
                 </div>
             @endif
 
