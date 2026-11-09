@@ -251,12 +251,8 @@
                 @endif
 
                 <!-- Acciones Permitidas (CA-03, CA-09, HU-11 CA-01) -->
-                <div class="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                    <a href="{{ route('reportes.mis-reportes') }}" class="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold text-center transition-colors">
-                        &larr; Volver a Mis Reportes
-                    </a>
-
-                    <div class="flex items-center gap-2">
+                @if ($publicacion->puedeRegistrarDevolucion() || $publicacion->devolucionActiva || $publicacion->puedeEditarse())
+                    <div class="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-end gap-2">
                         @if ($publicacion->puedeRegistrarDevolucion())
                             <a href="{{ route('devoluciones.create', $publicacion->id) }}" class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#691C32] via-[#7D1636] to-[#691C32] hover:from-[#520B1D] hover:to-[#520B1D] text-white text-xs font-bold transition-all shadow-xs">
                                 <svg class="w-3.5 h-3.5 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -280,7 +276,7 @@
                             </a>
                         @endif
                     </div>
-                </div>
+                @endif
             </div>
         </div>
     </div>

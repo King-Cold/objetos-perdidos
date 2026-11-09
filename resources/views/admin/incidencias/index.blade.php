@@ -22,11 +22,11 @@
                         Activas: <span class="text-slate-900">{{ $totalActivas }}</span>
                     </div>
                     <a href="{{ route('admin.incidencias.create') }}"
-                       class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#4E0B1B] hover:bg-[#3A0814] text-white text-xs font-bold shadow-sm transition">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover active:bg-tecnm-wine-dark text-white text-xs font-bold shadow hover:shadow-md active:translate-y-px transition cursor-pointer">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                         </svg>
-                        Abrir incidencia
+                        <span>Abrir incidencia</span>
                     </a>
                 </div>
             </div>
@@ -54,28 +54,51 @@
             <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-5 sm:p-6">
                 <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div class="flex flex-wrap items-center gap-2">
-                        <a href="{{ route('admin.incidencias.index') }}"
-                           class="px-3.5 py-1.5 rounded-full text-xs font-bold border transition {{ $filtroEstado === '' || $filtroEstado === 'todas' ? 'bg-[#4E0B1B] text-white border-[#4E0B1B]' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100' }}">
+                        @php
+                            $esTodas = ($filtroEstado === '' || $filtroEstado === 'todas');
+                        @endphp
+                        <a href="{{ route('admin.incidencias.index', array_filter(['q' => $busqueda])) }}"
+                           class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer {{ $esTodas ? 'bg-tecnm-wine text-white border-tecnm-wine shadow' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-2xs' }}">
                             Todas ({{ $totalIncidencias }})
                         </a>
-                        <a href="{{ route('admin.incidencias.index', ['estado' => \App\Models\Incidencia::ESTADO_ABIERTA]) }}"
-                           class="px-3.5 py-1.5 rounded-full text-xs font-bold border transition {{ $filtroEstado === \App\Models\Incidencia::ESTADO_ABIERTA ? 'bg-rose-700 text-white border-rose-700' : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100' }}">
+
+                        @php
+                            $esAbierta = ($filtroEstado === \App\Models\Incidencia::ESTADO_ABIERTA);
+                        @endphp
+                        <a href="{{ route('admin.incidencias.index', array_filter(['estado' => \App\Models\Incidencia::ESTADO_ABIERTA, 'q' => $busqueda])) }}"
+                           class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer {{ $esAbierta ? 'bg-tecnm-wine text-white border-tecnm-wine shadow' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-2xs' }}">
                             Abiertas
                         </a>
-                        <a href="{{ route('admin.incidencias.index', ['estado' => \App\Models\Incidencia::ESTADO_ESPERA_CORRECCION]) }}"
-                           class="px-3.5 py-1.5 rounded-full text-xs font-bold border transition {{ $filtroEstado === \App\Models\Incidencia::ESTADO_ESPERA_CORRECCION ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100' }}">
+
+                        @php
+                            $esCorreccion = ($filtroEstado === \App\Models\Incidencia::ESTADO_ESPERA_CORRECCION);
+                        @endphp
+                        <a href="{{ route('admin.incidencias.index', array_filter(['estado' => \App\Models\Incidencia::ESTADO_ESPERA_CORRECCION, 'q' => $busqueda])) }}"
+                           class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer {{ $esCorreccion ? 'bg-tecnm-wine text-white border-tecnm-wine shadow' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-2xs' }}">
                             En espera de corrección
                         </a>
-                        <a href="{{ route('admin.incidencias.index', ['estado' => \App\Models\Incidencia::ESTADO_ESPERA_RECUPERACION]) }}"
-                           class="px-3.5 py-1.5 rounded-full text-xs font-bold border transition {{ $filtroEstado === \App\Models\Incidencia::ESTADO_ESPERA_RECUPERACION ? 'bg-orange-700 text-white border-orange-700' : 'bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100' }}">
+
+                        @php
+                            $esRecuperacion = ($filtroEstado === \App\Models\Incidencia::ESTADO_ESPERA_RECUPERACION);
+                        @endphp
+                        <a href="{{ route('admin.incidencias.index', array_filter(['estado' => \App\Models\Incidencia::ESTADO_ESPERA_RECUPERACION, 'q' => $busqueda])) }}"
+                           class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer {{ $esRecuperacion ? 'bg-tecnm-wine text-white border-tecnm-wine shadow' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-2xs' }}">
                             En espera de recuperación
                         </a>
-                        <a href="{{ route('admin.incidencias.index', ['estado' => \App\Models\Incidencia::ESTADO_SIN_RESOLVER_CANALIZADA]) }}"
-                           class="px-3.5 py-1.5 rounded-full text-xs font-bold border transition {{ $filtroEstado === \App\Models\Incidencia::ESTADO_SIN_RESOLVER_CANALIZADA ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200' }}">
+
+                        @php
+                            $esCanalizada = ($filtroEstado === \App\Models\Incidencia::ESTADO_SIN_RESOLVER_CANALIZADA);
+                        @endphp
+                        <a href="{{ route('admin.incidencias.index', array_filter(['estado' => \App\Models\Incidencia::ESTADO_SIN_RESOLVER_CANALIZADA, 'q' => $busqueda])) }}"
+                           class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer {{ $esCanalizada ? 'bg-tecnm-wine text-white border-tecnm-wine shadow' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-2xs' }}">
                             Sin resolver y canalizada
                         </a>
-                        <a href="{{ route('admin.incidencias.index', ['estado' => \App\Models\Incidencia::ESTADO_CERRADA]) }}"
-                           class="px-3.5 py-1.5 rounded-full text-xs font-bold border transition {{ $filtroEstado === \App\Models\Incidencia::ESTADO_CERRADA ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' }}">
+
+                        @php
+                            $esCerrada = ($filtroEstado === \App\Models\Incidencia::ESTADO_CERRADA);
+                        @endphp
+                        <a href="{{ route('admin.incidencias.index', array_filter(['estado' => \App\Models\Incidencia::ESTADO_CERRADA, 'q' => $busqueda])) }}"
+                           class="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer {{ $esCerrada ? 'bg-tecnm-wine text-white border-tecnm-wine shadow' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-2xs' }}">
                             Cerradas ({{ $totalCerradas }})
                         </a>
                     </div>
@@ -88,11 +111,18 @@
                                name="q"
                                value="{{ $busqueda }}"
                                placeholder="Buscar por folio, objeto o motivo..."
-                               class="w-full sm:w-64 rounded-xl border-slate-300 text-xs focus:border-[#4E0B1B] focus:ring-[#4E0B1B]">
+                               class="w-full sm:w-64 rounded-xl border-slate-300 text-xs focus:border-[#691C32] focus:ring-[#691C32]">
                         <button type="submit"
-                                class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition">
+                                class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white text-xs font-bold shadow hover:shadow-md active:translate-y-px transition cursor-pointer">
                             Buscar
                         </button>
+                        @if ($busqueda !== '')
+                            <a href="{{ route('admin.incidencias.index', $filtroEstado ? ['estado' => $filtroEstado] : []) }}"
+                               class="px-2.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 hover:text-rose-700 text-xs font-bold shadow-xs transition"
+                               title="Limpiar búsqueda">
+                                ✕
+                            </a>
+                        @endif
                     </form>
                 </div>
             </div>

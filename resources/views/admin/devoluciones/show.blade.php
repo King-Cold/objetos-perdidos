@@ -53,44 +53,40 @@
                         </div>
                     </div>
 
-                    <!-- Acciones e Insignia de estado destacada (HU-13 / Acceso al historial desde gestión) -->
+                    <!-- Acciones principales (HU-13 / Acceso al historial e incidencias desde gestión) -->
                     <div class="flex items-center gap-2.5 shrink-0">
                         @if ($publicacion)
                             <a href="{{ route('admin.reportes.historial', $publicacion->id) }}"
-                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 hover:text-[#691C32] text-xs font-bold transition-all shadow-2xs">
-                                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 hover:border-slate-400 text-slate-800 hover:text-tecnm-wine text-xs font-bold shadow hover:shadow-md active:translate-y-px transition-all cursor-pointer">
+                                <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <span>Ver historial</span>
                             </a>
+
                             @php
                                 $incidenciaExistente = $publicacion->incidencias()->first();
                             @endphp
                             @if ($incidenciaExistente)
                                 <a href="{{ route('admin.incidencias.show', $incidenciaExistente->id) }}"
-                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-bold transition-all shadow-2xs">
+                                   class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover active:bg-tecnm-wine-dark text-white text-xs font-bold shadow hover:shadow-md active:translate-y-px transition-all cursor-pointer">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
                                     <span>Ver incidencia #{{ $incidenciaExistente->id }}</span>
                                 </a>
                             @elseif ($publicacion)
                                 <a href="{{ route('admin.incidencias.create', ['publicacionId' => $publicacion->id, 'devolucion_id' => $devolucion->id]) }}"
-                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-bold transition-all shadow-2xs"
+                                   class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-tecnm-wine hover:bg-tecnm-wine-hover active:bg-tecnm-wine-dark text-white text-xs font-bold shadow hover:shadow-md active:translate-y-px transition-all cursor-pointer"
                                    title="Canalizar contradicciones o incidencias de entrega">
-                                    <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                     </svg>
                                     <span>Abrir incidencia</span>
                                 </a>
                             @endif
                         @endif
-
-                        <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider shadow-2xs
-                            @if ($devolucion->estado === 'Pendiente de verificación') bg-amber-50 text-amber-900 border border-amber-300
-                            @elseif ($devolucion->estado === 'Verificada' || $devolucion->estado === 'Aprobada') bg-emerald-50 text-emerald-900 border border-emerald-300
-                            @elseif ($devolucion->estado === 'Requiere corrección') bg-orange-50 text-orange-900 border border-orange-300
-                            @else bg-slate-100 text-slate-800 border border-slate-300 @endif">
-                            <span class="w-2 h-2 rounded-full @if ($devolucion->estado === 'Pendiente de verificación') bg-amber-500 animate-pulse @elseif ($devolucion->estado === 'Requiere corrección') bg-orange-500 @else bg-emerald-500 @endif"></span>
-                            <span>{{ $devolucion->estado }}</span>
-                        </span>
                     </div>
                 </div>
 
@@ -250,12 +246,13 @@
                                 Información de la devolución
                             </h2>
                         </div>
-                        <span class="text-[10px] font-bold uppercase tracking-wider
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
                             @if ($devolucion->estado === 'Pendiente de verificación') bg-amber-50 text-amber-900 border border-amber-300
                             @elseif ($devolucion->estado === 'Verificada' || $devolucion->estado === 'Aprobada') bg-emerald-50 text-emerald-900 border border-emerald-300
                             @elseif ($devolucion->estado === 'Requiere corrección') bg-orange-50 text-orange-900 border border-orange-300
-                            @else bg-slate-100 text-slate-800 border border-slate-300 @endif px-2.5 py-0.5 rounded-full">
-                            {{ $devolucion->estado }}
+                            @else bg-slate-100 text-slate-800 border border-slate-300 @endif">
+                            <span class="w-1.5 h-1.5 rounded-full @if ($devolucion->estado === 'Pendiente de verificación') bg-amber-500 animate-pulse @elseif ($devolucion->estado === 'Requiere corrección') bg-orange-500 @else bg-emerald-500 @endif"></span>
+                            <span>{{ $devolucion->estado }}</span>
                         </span>
                     </div>
 

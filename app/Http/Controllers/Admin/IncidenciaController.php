@@ -162,13 +162,28 @@ class IncidenciaController extends Controller
             Incidencia::ESTADO_SIN_RESOLVER_CANALIZADA,
         ])->count();
 
+        $conteoPorEstado = Incidencia::select('estado', DB::raw('count(*) as total'))
+            ->groupBy('estado')
+            ->pluck('total', 'estado');
+
+        $contadores = [
+            'todas' => $totalIncidencias,
+            'activas' => $totalActivas,
+            'abiertas' => (int) ($conteoPorEstado[Incidencia::ESTADO_ABIERTA] ?? 0),
+            'correccion' => (int) ($conteoPorEstado[Incidencia::ESTADO_ESPERA_CORRECCION] ?? 0),
+            'recuperacion' => (int) ($conteoPorEstado[Incidencia::ESTADO_ESPERA_RECUPERACION] ?? 0),
+            'canalizadas' => (int) ($conteoPorEstado[Incidencia::ESTADO_SIN_RESOLVER_CANALIZADA] ?? 0),
+            'cerradas' => (int) ($conteoPorEstado[Incidencia::ESTADO_CERRADA] ?? 0),
+        ];
+
         return view('admin.incidencias.index', compact(
             'incidencias',
             'filtroEstado',
             'busqueda',
             'totalIncidencias',
             'totalActivas',
-            'totalCerradas'
+            'totalCerradas',
+            'contadores'
         ));
     }
 
