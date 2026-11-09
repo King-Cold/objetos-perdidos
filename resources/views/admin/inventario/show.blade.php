@@ -52,16 +52,6 @@
                             <span>Historial del objeto</span>
                         </a>
 
-                        @if ($recepcion->isAnualVencido())
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-900 border border-rose-300">
-                                Resguardo vencido
-                            </span>
-                        @else
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-900 border border-emerald-300">
-                                Bajo resguardo
-                            </span>
-                        @endif
-
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">
                             En biblioteca
                         </span>
@@ -431,21 +421,9 @@
 
                         <!-- Botones de Acción al pie de la tarjeta -->
                         <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-end gap-3">
-                            @if ($reporte->puedeRegistrarDevolucionDesdeBiblioteca())
-                                <a href="{{ route('admin.devoluciones-biblioteca.create', $reporte->id) }}"
-                                   class="w-full sm:w-auto px-5 py-2 rounded-xl bg-gradient-to-r from-[#691C32] via-[#7D1636] to-[#691C32] hover:from-[#520B1D] hover:to-[#520B1D] text-white text-xs font-bold text-center transition-all shadow-2xs">
-                                    Registrar devolución desde biblioteca
-                                </a>
-                            @endif
-
                             <a href="{{ route('admin.moderacion.show', $reporte->id) }}"
                                class="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold text-center transition-colors">
                                 Ver en moderación
-                            </a>
-
-                            <a href="{{ route('admin.inventario.index') }}"
-                               class="w-full sm:w-auto px-5 py-2 rounded-xl bg-[#691C32] hover:bg-[#520B1D] text-white text-xs font-bold text-center transition-colors shadow-2xs">
-                                Volver al inventario
                             </a>
                         </div>
                     </div>

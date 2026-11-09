@@ -60,7 +60,16 @@
             <!-- Pestañas de filtrado por estado (Igual a Entregas y Devoluciones) -->
             <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
                 <div class="flex items-center gap-1.5 p-1.5 bg-slate-50/80 border-b border-slate-100 flex-wrap">
-                    <!-- 1. Pendientes de revisión -->
+                    <!-- 1. Todas -->
+                    <a href="{{ route('admin.moderacion.index', ['filtro' => 'todas']) }}"
+                       class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 {{ ($filtroEstado ?? 'pendientes') === 'todas' ? 'bg-white text-slate-800 border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
+                        <span>Todas</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ ($filtroEstado ?? 'pendientes') === 'todas' ? 'bg-slate-200 text-slate-800' : 'bg-slate-200/80 text-slate-600' }}">
+                            {{ $contadores['todas'] ?? 0 }}
+                        </span>
+                    </a>
+
+                    <!-- 2. Pendientes de revisión -->
                     <a href="{{ route('admin.moderacion.index', ['filtro' => 'pendientes']) }}"
                        class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 {{ ($filtroEstado ?? 'pendientes') === 'pendientes' ? 'bg-white text-tecnm-wine border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
                         <span>Pendientes de revisión</span>
@@ -69,7 +78,7 @@
                         </span>
                     </a>
 
-                    <!-- 2. Activas en el muro -->
+                    <!-- 3. Activas en el muro -->
                     <a href="{{ route('admin.moderacion.index', ['filtro' => 'activas']) }}"
                        class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 {{ ($filtroEstado ?? 'pendientes') === 'activas' ? 'bg-white text-emerald-700 border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
                         <span>Activas en el muro</span>
@@ -78,7 +87,7 @@
                         </span>
                     </a>
 
-                    <!-- 3. Vencidas (Pendientes biblioteca) -->
+                    <!-- 4. Vencidas (Pendientes biblioteca) -->
                     <a href="{{ route('admin.moderacion.index', ['filtro' => 'vencidas']) }}"
                        class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 {{ ($filtroEstado ?? 'pendientes') === 'vencidas' ? 'bg-white text-amber-900 border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
                         <span>Vencidas (Pendientes biblioteca)</span>
@@ -87,7 +96,7 @@
                         </span>
                     </a>
 
-                    <!-- 4. Bajo resguardo biblioteca -->
+                    <!-- 5. Bajo resguardo biblioteca -->
                     <a href="{{ route('admin.moderacion.index', ['filtro' => 'resguardo']) }}"
                        class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 {{ ($filtroEstado ?? 'pendientes') === 'resguardo' ? 'bg-white text-blue-700 border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
                         <span>En resguardo de biblioteca</span>
@@ -96,21 +105,12 @@
                         </span>
                     </a>
 
-                    <!-- 5. Canceladas -->
+                    <!-- 6. Canceladas -->
                     <a href="{{ route('admin.moderacion.index', ['filtro' => 'canceladas']) }}"
                        class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 {{ ($filtroEstado ?? 'pendientes') === 'canceladas' ? 'bg-white text-rose-700 border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
                         <span>Canceladas</span>
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ ($filtroEstado ?? 'pendientes') === 'canceladas' ? 'bg-rose-100 text-rose-800' : 'bg-slate-200/80 text-slate-600' }}">
                             {{ $contadores['canceladas'] ?? 0 }}
-                        </span>
-                    </a>
-
-                    <!-- 6. Todas -->
-                    <a href="{{ route('admin.moderacion.index', ['filtro' => 'todas']) }}"
-                       class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 {{ ($filtroEstado ?? 'pendientes') === 'todas' ? 'bg-white text-slate-800 border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
-                        <span>Todas</span>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ ($filtroEstado ?? 'pendientes') === 'todas' ? 'bg-slate-200 text-slate-800' : 'bg-slate-200/80 text-slate-600' }}">
-                            {{ $contadores['todas'] ?? 0 }}
                         </span>
                     </a>
                 </div>
