@@ -18,13 +18,25 @@
                 </p>
             </div>
 
-            <!-- Contador de pendientes -->
+            <!-- Contador según filtro activo -->
             <div class="flex items-center gap-3">
                 <div class="px-4 py-2 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex items-center gap-2.5">
-                    <span class="w-2.5 h-2.5 rounded-full {{ $devoluciones->total() > 0 ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500' }}"></span>
-                    <span class="text-xs font-medium text-slate-600">
-                        Pendientes de verificación: <strong class="text-slate-900 font-extrabold">{{ $devoluciones->total() }}</strong>
-                    </span>
+                    @if (($filtroEstado ?? 'pendientes') === 'aprobadas')
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        <span class="text-xs font-medium text-slate-600">
+                            Devoluciones aprobadas: <strong class="text-slate-900 font-extrabold">{{ $contadores['aprobadas'] ?? 0 }}</strong>
+                        </span>
+                    @elseif (($filtroEstado ?? 'pendientes') === 'todas')
+                        <span class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                        <span class="text-xs font-medium text-slate-600">
+                            Total de devoluciones: <strong class="text-slate-900 font-extrabold">{{ $contadores['todas'] ?? 0 }}</strong>
+                        </span>
+                    @else
+                        <span class="w-2.5 h-2.5 rounded-full {{ ($contadores['pendientes'] ?? 0) > 0 ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500' }}"></span>
+                        <span class="text-xs font-medium text-slate-600">
+                            Pendientes de verificación: <strong class="text-slate-900 font-extrabold">{{ $contadores['pendientes'] ?? 0 }}</strong>
+                        </span>
+                    @endif
                 </div>
             </div>
         </div>
@@ -45,20 +57,34 @@
                 </div>
             @endif
 
-            <!-- Pestañas de filtrado por estado (HU-13: acceso a devoluciones aprobadas para consultar historial) -->
+            <!-- Pestañas de filtrado por estado (Igual a Gestión de Objetos) -->
             <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-                <div class="flex items-center gap-1 p-1.5 bg-slate-50/80 border-b border-slate-100">
-                    <a href="{{ route('admin.devoluciones.index', ['filtro' => 'pendientes']) }}"
-                       class="px-4 py-2 rounded-xl text-xs font-bold transition-all {{ ($filtroEstado ?? 'pendientes') === 'pendientes' ? 'bg-white text-tecnm-wine border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
-                        Pendientes
-                    </a>
-                    <a href="{{ route('admin.devoluciones.index', ['filtro' => 'aprobadas']) }}"
-                       class="px-4 py-2 rounded-xl text-xs font-bold transition-all {{ ($filtroEstado ?? 'pendientes') === 'aprobadas' ? 'bg-white text-emerald-700 border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
-                        Aprobadas
-                    </a>
+                <div class="flex items-center gap-1.5 p-1.5 bg-slate-50/80 border-b border-slate-100 flex-wrap">
+                    <!-- 1. Todas -->
                     <a href="{{ route('admin.devoluciones.index', ['filtro' => 'todas']) }}"
-                       class="px-4 py-2 rounded-xl text-xs font-bold transition-all {{ ($filtroEstado ?? 'pendientes') === 'todas' ? 'bg-white text-slate-800 border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
-                        Todas
+                       class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 {{ ($filtroEstado ?? 'pendientes') === 'todas' ? 'bg-white text-slate-800 border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
+                        <span>Todas</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ ($filtroEstado ?? 'pendientes') === 'todas' ? 'bg-slate-200 text-slate-800' : 'bg-slate-200/80 text-slate-600' }}">
+                            {{ $contadores['todas'] ?? 0 }}
+                        </span>
+                    </a>
+
+                    <!-- 2. Pendientes -->
+                    <a href="{{ route('admin.devoluciones.index', ['filtro' => 'pendientes']) }}"
+                       class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 {{ ($filtroEstado ?? 'pendientes') === 'pendientes' ? 'bg-white text-tecnm-wine border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
+                        <span>Pendientes</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ ($filtroEstado ?? 'pendientes') === 'pendientes' ? 'bg-tecnm-wine/10 text-tecnm-wine' : 'bg-slate-200/80 text-slate-600' }}">
+                            {{ $contadores['pendientes'] ?? 0 }}
+                        </span>
+                    </a>
+
+                    <!-- 3. Aprobadas -->
+                    <a href="{{ route('admin.devoluciones.index', ['filtro' => 'aprobadas']) }}"
+                       class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 {{ ($filtroEstado ?? 'pendientes') === 'aprobadas' ? 'bg-white text-emerald-700 border border-slate-200 shadow-xs' : 'text-slate-500 hover:text-slate-700 hover:bg-white/60' }}">
+                        <span>Aprobadas</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ ($filtroEstado ?? 'pendientes') === 'aprobadas' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200/80 text-slate-600' }}">
+                            {{ $contadores['aprobadas'] ?? 0 }}
+                        </span>
                     </a>
                 </div>
             </div>

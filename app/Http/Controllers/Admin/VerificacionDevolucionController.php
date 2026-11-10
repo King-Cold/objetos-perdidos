@@ -52,7 +52,16 @@ class VerificacionDevolucionController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('admin.devoluciones.index', compact('devoluciones', 'filtroEstado'));
+        $contadores = [
+            'todas' => Devolucion::count(),
+            'pendientes' => Devolucion::pendientesVerificacion()->count(),
+            'aprobadas' => Devolucion::whereIn('devoluciones.estado', [
+                Devolucion::ESTADO_VERIFICADA,
+                Devolucion::ESTADO_APROBADA,
+            ])->count(),
+        ];
+
+        return view('admin.devoluciones.index', compact('devoluciones', 'filtroEstado', 'contadores'));
     }
 
     /**
